@@ -256,7 +256,10 @@ def call_jev(key, state, questions=None, timeout=4.0):
     req = urllib.request.Request(
         API,
         data=body,
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        # urllib's default "Python-urllib/x.y" signature is refused at the API's
+        # edge (Cloudflare 403, error code 1010); identify this service instead.
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json",
+                 "User-Agent": f"jev-assist/{VERSION}"},
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:

@@ -107,8 +107,9 @@ class AskEndpointTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.server = jev_server.ThreadingHTTPServer(("127.0.0.1", 0), jev_server.Handler)
-        cls.server.daemon_threads = True
+        # The production server class: it lets the client close first, so an
+        # early refusal (401 before the body is read) is not lost to a reset.
+        cls.server = jev_server.LocalServer(("127.0.0.1", 0), jev_server.Handler)
         cls.port = cls.server.server_address[1]
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()

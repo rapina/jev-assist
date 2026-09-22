@@ -1,0 +1,26 @@
+# Local run artifacts (never published)
+shadow-log.jsonl
+*.jsonl
+*.log
+*.log.*
+*.jsonl.*
+*.bak
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Secrets / local env
+.env
+*.secret
+server/client.json
+
+# Machine-local environments and credentials
+.venv/
+.env.*
+*.key
+*.sqlite3
+*.sqlite3-*

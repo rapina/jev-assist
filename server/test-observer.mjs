@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { mkdtempSync, rmSync, readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import { observe } from './observer.mjs';
+import { configureHooks } from './configure-client.mjs';
+
+test('Observer tracks unverified, verified and later edited work without blocking; failed upload retains evidence', async t => {
+  const directory = mkdtempSync(path.join(os.tmpdir(),'jev-observation-'));
+  t.after(() => rmSync(directory,{recursive:true,force:true}));
+  const uploaded = [];
+  const post = async (route, body) => { assert.equal(route,'/v1/observations'); uploaded.push(body); return {ok:true}; };
+  const base = {session_id:'fixture',cwd:directory,turn_id:'turn'};
+  const edit = { ...base, hook_event_name:'PostToolUse', tool_name:'apply_patch',tool_input:{command:'*** Begin Patch\n*** Add File: sample.js\n+export const x = 1;\n*** End Patch'}};
+  const opts = {directory,post,judgeEnabled:false};
+  assert.deepEqual(await observe(edit,opts),{});
+  await observe({...base,hook_event_name:'Stop',last_assistant_message:'Done'},opts);
+  assert.equal(uploaded.at(-1).verdict,'block'); assert.equal(uploaded.at(-1).verified,false);
+  assert.deepEqual(await observe({...base,hook_event_name:'PostToolUse',tool_name:'Bash',tool_input:{command:'node --test'},tool_response:{exit_code:0,stdout:'private-output-must-not-upload'}},opts),{});
+  assert.equal(uploaded.at(-1).verified,true);
+  assert.ok(!JSON.stringify(uploaded).includes('private-output-must-not-upload'));
+  assert.ok(!JSON.stringify(uploaded).includes('export const'));
+  await observe(edit,opts); assert.equal(uploaded.at(-1).verified,false);
+  await assert.rejects(observe(edit,{...opts,post:async()=>{throw new Error('offline')}}));
+  const pending = readdirSync(directory).find(f=>f.endsWith('.pending.json'));
+  assert.ok(JSON.parse(readFileSync(path.join(directory,pending),'utf8')).eventCount>0);
+  const existing = JSON.stringify({hooks:{Stop:[{hooks:[{command:'unrelated-hook'}]}]}});
+  const configured=configureHooks(existing);
+  assert.equal(configureHooks(configured),configured);
+  assert.ok(configured.includes('unrelated-hook')); assert.ok(!configured.includes('PreToolUse'));
+  const old = JSON.stringify({hooks:{Stop:[{hooks:[{command:'node "C:\\old-checkout\\server\\canny-observer.mjs"',statusMessage:'Jev Coding observation'}]}]}});
+  assert.equal(JSON.parse(configureHooks(old)).hooks.Stop.length, 1);
+});

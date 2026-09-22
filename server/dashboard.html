@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jev Assist</title>
+  <link rel="stylesheet" href="/dashboard/dashboard.css">
+  <script src="/dashboard/dashboard.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1><a class="brand" href="/dashboard/" aria-label="Jev 대시보드">JEV ASSIST<span>ROUTING / REQUESTS</span></a></h1>
+    <div class="toolbar"><span id="connection" role="status">연결 중</span><button id="pause" type="button" aria-pressed="false">일시 정지</button></div>
+  </header>
+  <main>
+    <div id="error" class="notice error" role="alert" hidden></div>
+    <div id="auth" class="notice" hidden>서비스 접속 상태를 확인하고 페이지를 새로 고치세요.</div>
+    <details class="skill-install">
+      <summary>클라이언트 설치 / PowerShell</summary>
+      <p class="hint">Node.js 22.19+ 필요. 스킬·로컬 연결기를 설치합니다. 중앙은 모델 판단만 하며, 실행은 현재 Codex 계정을 사용합니다. Codex/Orca를 완전히 종료한 뒤 새 대화를 시작하세요. 관찰은 /hooks에서 활성화합니다.</p>
+      <label for="skill-command" class="sr-only">스킬 설치 명령어</label>
+      <textarea id="skill-command" rows="4" readonly spellcheck="false"></textarea>
+      <div class="install-actions"><button id="copy-skill" type="button">명령어 복사</button><a href="/dashboard/skill.md" target="_blank" rel="noopener">스킬 내용 보기</a><span id="skill-copy-status" role="status"></span></div>
+    </details>
+    <section class="stats" aria-label="기록 집계">
+      <div><span>전체 요청</span><strong id="stat-total">0</strong></div><div><span>실행 완료</span><strong id="stat-completed">0</strong></div><div><span>실행 실패</span><strong id="stat-failed">0</strong></div>
+    </section>
+    <section id="observation-panel" class="requests" aria-labelledby="observation-title" hidden>
+      <div class="section-head"><h2 id="observation-title">검증 관찰</h2><span class="muted">차단 없음 · 클라이언트 보고</span></div>
+      <p class="hint">마지막 변경 이후 검증 통과 여부. 인식하지 못한 도구·명령은 누락될 수 있으며 결과 품질을 보증하지 않습니다.</p>
+      <div id="observations"><p class="empty">아직 수집된 세션이 없습니다. 클라이언트의 /hooks에서 관찰 훅을 활성화하세요.</p></div>
+    </section>
+    <section class="distribution" aria-labelledby="distribution-title">
+      <div class="section-head"><h2 id="distribution-title">모델 배분</h2><span id="distribution-count" class="muted"></span></div>
+      <div id="distribution-bar" class="distribution-bar" role="img" aria-label="모델별 요청 점유율"></div>
+      <div id="distribution-legend" class="distribution-legend"></div>
+      <p class="list-footer">보관된 완료 요청 전체 기준 · 배정 구분 필터 적용 · 요청 점유율이며 비용·품질 지표는 아닙니다.</p>
+    </section>
+    <div class="workspace">
+      <section class="requests" aria-labelledby="requests-title">
+        <div class="section-head"><h2 id="requests-title">요청 기록</h2><span id="record-count" class="muted">최근 100건</span></div>
+        <form id="filters" class="filters">
+          <label>배정 구분<select id="mode"><option value="">전체</option><option value="auto">Jev 자동</option><option value="fixed">클라이언트 지정</option></select></label>
+          <label>모델<select id="model" name="model"><option value="">모든 모델</option><option value="gpt-5.6-luna">Luna</option><option value="gpt-5.6-terra">Terra</option><option value="gpt-5.6-sol">Sol</option><option value="gpt-6-astra">Astra</option></select></label>
+        </form>
+        <div class="table-scroll"><table><caption class="sr-only">실시간 라우팅 요청 목록. 난이도 버튼을 누르면 상세 기록을 엽니다.</caption><thead><tr><th scope="col">난이도</th><th scope="col">시각 / 요청 ID</th><th scope="col">모델 / 추론</th><th scope="col">상태</th><th scope="col">Jev</th></tr></thead><tbody id="records"></tbody></table></div>
+        <p id="empty" class="empty">기록을 불러오는 중입니다.</p>
+        <p class="list-footer">VIS 시각 · ARCH 아키텍처 · CODE 코딩 · RISK 위험 / 0 해당 없음 · N/A 미평가</p>
+      </section>
+      <section class="detail" aria-labelledby="detail-title">
+        <div class="section-head"><h2 id="detail-title">결정 상세</h2><span id="detail-phase" class="badge">선택 대기</span></div>
+        <p id="detail-empty" class="empty">요청을 선택하세요.</p>
+        <div id="detail-content" hidden>
+          <div class="detail-heading"><p id="detail-time" class="muted mono"></p><h3 id="detail-task"></h3><p id="detail-id" class="muted mono"></p></div>
+          <p id="route-note" class="hint"></p>
+          <ol id="events" class="events" aria-label="요청 진행 단계"></ol>
+          <section class="detail-section"><h3>모델 선택</h3><dl id="decision" class="facts"></dl><p class="hint">선택 확률 / confidence ≠ 결과 품질 점수.</p></section>
+          <details open><summary>Jev 선택 확률</summary><pre id="response"></pre></details>
+          <details><summary>정책 적용 · 최종 선택</summary><pre id="policy"></pre></details>
+          <details><summary>실행 결과 · 시간 · 토큰</summary><pre id="outcome"></pre></details>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

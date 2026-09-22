@@ -6,6 +6,7 @@ import path from 'node:path';
 import { once } from 'node:events';
 
 export const MODELS = ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol', 'gpt-6-astra'];
+export const MAX_REQUEST_BYTES = 256 * 1024 * 1024;
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 const PORT = 4321;
 
@@ -54,7 +55,7 @@ export function createLocalClient({origin, upstream = 'https://chatgpt.com/backe
       if (req.method !== 'POST' || req.url !== '/v1/responses') return reply(res,404,'Unsupported route');
       if (!/^Bearer \S+$/.test(req.headers.authorization || '')) return reply(res,401,'Use your local Codex ChatGPT login');
       let size=0; const chunks=[];
-      for await (const chunk of req) { size+=chunk.length; if(size>64*1024*1024) return reply(res,413,'Request too large'); chunks.push(chunk); }
+      for await (const chunk of req) { size+=chunk.length; if(size>MAX_REQUEST_BYTES) return reply(res,413,'Request too large'); chunks.push(chunk); }
       let payload;
       try { payload=JSON.parse(Buffer.concat(chunks).toString()); } catch { return reply(res,400,'Invalid JSON'); }
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return reply(res,400,'Invalid request');

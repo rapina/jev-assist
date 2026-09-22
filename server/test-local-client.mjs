@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { createLocalClient } from './local-client.mjs';
+import { createLocalClient, MAX_REQUEST_BYTES } from './local-client.mjs';
+
+test('local transport allows image-bearing requests beyond the old 64 MiB cap', () => {
+  assert.equal(MAX_REQUEST_BYTES, 256 * 1024 * 1024);
+});
 
 test('central decides; local credentials and complete input go only to OpenAI; 429 does not latch', async t => {
   const calls=[]; let status=429;

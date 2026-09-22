@@ -31,6 +31,15 @@ class EmbeddedRouterLayout(unittest.TestCase):
         self.assertNotIn('"$router_dir/install.sh" --prepare-only', installer)
         self.assertIn('"$router_dir/bin/install" --take-over-managed-router', installer)
 
+    def test_windows_deploy_waits_for_ci_and_restarts_only_jev_services(self):
+        deploy = (ROOT / "server" / "deploy-windows.ps1").read_text()
+        self.assertIn("actions/workflows/ci.yml/runs", deploy)
+        self.assertIn("@('merge', '--ff-only'", deploy)
+        self.assertIn("service-windows.ps1", deploy)
+        self.assertIn("JevHttpGateway-", deploy)
+        self.assertNotIn("install.ps1\" -SkipSmoke", deploy)
+        self.assertNotIn("router\\src\\service.mjs", deploy)
+
     def test_model_configuration_is_idempotent_and_preserves_other_routes(self):
         with tempfile.TemporaryDirectory() as temp:
             state_dir = pathlib.Path(temp) / "state"

@@ -15,10 +15,25 @@
   <main>
     <div id="error" class="notice error" role="alert" hidden></div>
     <div id="auth" class="notice" hidden>서비스 접속 상태를 확인하고 페이지를 새로 고치세요.</div>
+    <section class="recovery" aria-labelledby="recovery-title">
+      <h2 id="recovery-title">장애 시 계속 작업</h2>
+      <div class="recovery-body">
+        <div class="recovery-rules">
+          <p><strong>중앙 서버 연결 실패</strong>자동 모드: 최대 4초 후 로컬 Sol · 직접 선택: 해당 모델로 즉시 실행</p>
+          <p><strong>로컬 연결기도 중단</strong>아래 명령을 새 터미널에서 실행 → 기본 Codex · 본인 계정 사용</p>
+        </div>
+        <div class="recovery-command">
+          <label for="recovery-command" class="sr-only">기본 Codex 실행 명령</label>
+          <textarea id="recovery-command" rows="1" readonly spellcheck="false">codex -c model_provider=openai -m gpt-5.6-sol</textarea>
+          <button id="copy-recovery" type="button">기본 실행 명령 복사</button>
+          <span id="recovery-copy-status" role="status"></span>
+        </div>
+        <p class="recovery-note">자동 모드는 서버 복구 후 다음 요청부터 Jev 판단 재개 · 장애 중 기록은 대시보드에서 누락될 수 있음 · OpenAI 자체 제한은 그대로 적용</p>
+      </div>
+    </section>
     <details class="skill-install">
       <summary>클라이언트 설치 / PowerShell</summary>
       <p class="hint">Node.js 22.19+ 필요. 스킬·로컬 연결기를 설치합니다. 중앙은 모델 판단만 하며, 실행은 현재 Codex 계정을 사용합니다. Codex/Orca를 완전히 종료한 뒤 새 대화를 시작하세요. 관찰은 /hooks에서 활성화합니다.</p>
-      <p class="hint">중앙 연결 실패 시 자동 모드는 로컬 Sol로 실행합니다. 직접 선택한 모델은 그대로 실행합니다. 로컬 연결기도 꺼졌다면 <code>codex -c model_provider=openai -m gpt-5.6-sol</code>로 기본 Codex를 실행하세요.</p>
       <label for="skill-command" class="sr-only">스킬 설치 명령어</label>
       <textarea id="skill-command" rows="4" readonly spellcheck="false"></textarea>
       <div class="install-actions"><button id="copy-skill" type="button">명령어 복사</button><a href="/dashboard/skill.md" target="_blank" rel="noopener">스킬 내용 보기</a><span id="skill-copy-status" role="status"></span></div>

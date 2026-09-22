@@ -165,11 +165,13 @@ setInterval(refresh, 1000);
 const serviceOrigin = location.origin.replaceAll("'", "''");
 $("skill-command").value = `& ([scriptblock]::Create((Invoke-RestMethod '${serviceOrigin}/dashboard/install-client.ps1'))) -ServiceUrl '${serviceOrigin}'`;
 
-$("copy-skill").addEventListener("click", async () => {
-  const field = $("skill-command");
-  try {
-    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(field.value);
-    else { field.focus(); field.select(); if (!document.execCommand("copy")) throw new Error(); }
-    $("skill-copy-status").textContent = "복사됨";
-  } catch { field.focus(); field.select(); $("skill-copy-status").textContent = "선택된 명령어를 Ctrl+C로 복사하세요."; }
-});
+for (const [button, input, status] of [["copy-skill", "skill-command", "skill-copy-status"], ["copy-recovery", "recovery-command", "recovery-copy-status"]]) {
+  $(button).addEventListener("click", async () => {
+    const field = $(input);
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(field.value);
+      else { field.focus(); field.select(); if (!document.execCommand("copy")) throw new Error(); }
+      $(status).textContent = "복사됨";
+    } catch { field.focus(); field.select(); $(status).textContent = "선택된 명령어를 Ctrl+C로 복사하세요."; }
+  });
+}

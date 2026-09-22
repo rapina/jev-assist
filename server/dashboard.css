@@ -163,15 +163,15 @@ pre { background: #f6f6f6; border: 1px solid #aaa; padding: 9px; margin: 0 0 10p
 .legend-item { display: inline-flex; align-items: center; gap: 5px; }
 .swatch { width: 10px; height: 10px; border: 1px solid #888; }
 
-.recovery { border: 2px solid #111; border-left-width: 6px; margin-bottom: 12px; background: #fff5c2; }
-.recovery h2 { margin: 0; padding: 7px 10px; background: #111; color: #fff; font-size: 12px; }
+.recovery { border: 2px solid #111; border-left-width: 6px; margin-bottom: 12px; padding: 0; background: #fff5c2; }
+.recovery > summary { margin: 0; padding: 7px 10px; background: #111; color: #fff; font-size: 12px; }
 .recovery-body { padding: 10px; }
-.recovery-rules { display: flex; flex-wrap: wrap; gap: 8px 30px; }
-.recovery-rules p { margin: 0; font-size: 12px; }
-.recovery-rules strong { display: block; margin-bottom: 4px; }
-.recovery-command { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.recovery-command textarea { width: 49ch; max-width: 100%; min-width: 0; box-sizing: border-box; resize: none; padding: 7px; background: #fff; color: #111; font: inherit; }
+.recovery-body > .hint { margin: 0 0 10px; }
+.recovery-option { border-top: 1px solid #111; padding: 10px 0 4px; }
+.recovery-option h3 { margin: 0 0 6px; font-size: 13px; }
+.recovery-option .hint { margin: 0 0 8px; }
+.recovery-command { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.recovery-command textarea { width: 60ch; max-width: 100%; min-width: 0; box-sizing: border-box; resize: none; padding: 7px; background: #fff; color: #111; font: inherit; }
 .recovery-command button { background: #111; color: #fff; border: 1px solid #111; padding: 7px 10px; }
 .recovery-command button:hover { background: #444; }
-.recovery-note { margin: 8px 0 0; font-size: 11px; }
 @media (max-width: 540px) { .recovery-command textarea { width: 100%; height: 55px; } }

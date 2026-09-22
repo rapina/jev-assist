@@ -14,32 +14,38 @@
   </header>
   <main>
     <div id="error" class="notice error" role="alert" hidden></div>
-    <section class="recovery" aria-labelledby="recovery-title">
-      <h2 id="recovery-title">장애 시 계속 작업</h2>
+    <details class="recovery" id="recovery-guide">
+      <summary>장애 시 대응 가이드</summary>
       <div class="recovery-body">
-        <div class="recovery-rules">
-          <p><strong>중앙 서버 연결 실패</strong>자동 모드: 최대 4초 후 로컬 Sol · 직접 선택: 해당 모델로 즉시 실행</p>
-          <p><strong>로컬 연결기도 중단</strong>아래 명령을 새 터미널에서 실행 → 기본 Codex · 본인 계정 사용</p>
-        </div>
-        <div class="recovery-command">
-          <label for="recovery-command" class="sr-only">기본 Codex 실행 명령</label>
-          <textarea id="recovery-command" rows="1" readonly spellcheck="false">codex -c model_provider=openai -m gpt-5.6-sol</textarea>
-          <button id="copy-recovery" type="button">기본 실행 명령 복사</button>
-          <span id="recovery-copy-status" role="status"></span>
-        </div>
-        <p class="recovery-note">자동 모드는 서버 복구 후 다음 요청부터 Jev 판단 재개 · 장애 중 기록은 대시보드에서 누락될 수 있음 · OpenAI 자체 제한은 그대로 적용</p>
+        <p class="hint">중앙 서버가 응답하지 않으면 자동 모드는 4초 뒤 로컬 Sol로 실행을 이어가므로 대부분의 일시 장애는 명령 없이 지나갑니다. 로컬 연결기까지 멈췄거나 Jev를 걷어내야 할 때 아래 둘 중 하나를 고르세요.</p>
+        <section class="recovery-option" aria-labelledby="recovery-bypass-title">
+          <h3 id="recovery-bypass-title">1. 잠시 이어가기 — Jev 없이 Codex 직접 실행</h3>
+          <p class="hint">새 터미널에서 실행합니다. 이 프로세스만 OpenAI 프로바이더와 지정한 모델(본인 계정)을 쓰며 설정 파일은 바뀌지 않습니다. 복구 뒤 평소처럼 Codex를 열면 자동 라우팅으로 돌아옵니다. 모델 이름은 필요에 따라 바꾸세요.</p>
+          <div class="recovery-command">
+            <label for="recovery-command" class="sr-only">Jev 없이 Codex 실행 명령</label>
+            <textarea id="recovery-command" rows="1" readonly spellcheck="false">codex -c model_provider=openai -m gpt-5.6-sol</textarea>
+            <button id="copy-recovery" type="button">실행 명령 복사</button>
+            <span id="recovery-copy-status" role="status"></span>
+          </div>
+        </section>
+        <section class="recovery-option" aria-labelledby="recovery-remove-title">
+          <h3 id="recovery-remove-title">2. 완전 제거 — 로컬에서 Jev Assist 삭제</h3>
+          <p class="hint">PowerShell에서 실행합니다. 설치 전 설정을 복원하고 로컬 연결기·예약 작업·런타임을 제거합니다. 설치 후 바뀐 설정은 <code>.before-jev-uninstall</code> 파일로 보존됩니다. 실행 뒤 Codex/Orca를 완전히 종료하고 다시 시작하세요.</p>
+          <div class="recovery-command">
+            <label for="uninstall-command" class="sr-only">Jev Assist 제거 명령</label>
+            <textarea id="uninstall-command" rows="2" readonly spellcheck="false"></textarea>
+            <button id="copy-uninstall" type="button">제거 명령 복사</button>
+            <span id="uninstall-copy-status" role="status"></span>
+          </div>
+        </section>
       </div>
-    </section>
+    </details>
     <details class="client-install">
       <summary>클라이언트 설치 / PowerShell</summary>
       <p class="hint">Docker는 필요 없습니다. Node.js 22.19+가 없으면 WinGet으로 자동 설치합니다. 모델 카탈로그와 로컬 연결기를 설치한 뒤 Codex/Orca를 완전히 종료하고 새 대화를 시작하세요. 관찰은 /hooks에서 활성화합니다.</p>
       <label for="client-command" class="sr-only">클라이언트 설치 명령어</label>
       <textarea id="client-command" rows="4" readonly spellcheck="false"></textarea>
       <div class="install-actions"><button id="copy-client" type="button">명령어 복사</button><span id="client-copy-status" role="status"></span></div>
-      <p class="hint">제거하면 설치 전 설정을 복원하고 로컬 연결기를 삭제합니다. 설치 후 변경된 설정은 <code>.before-jev-uninstall</code> 파일로 보존됩니다.</p>
-      <label for="uninstall-command" class="sr-only">클라이언트 제거 명령어</label>
-      <textarea id="uninstall-command" rows="3" readonly spellcheck="false"></textarea>
-      <div class="install-actions"><button id="copy-uninstall" type="button">제거 명령어 복사</button><span id="uninstall-copy-status" role="status"></span></div>
     </details>
     <section class="stats" aria-label="기록 집계">
       <div><span>전체 요청</span><strong id="stat-total">0</strong></div><div><span>실행 완료</span><strong id="stat-completed">0</strong></div><div><span>실행 실패</span><strong id="stat-failed">0</strong></div>

@@ -79,6 +79,18 @@ class WindowsInstall(unittest.TestCase):
                 hooks = json.loads((home / 'hooks.json').read_text())['hooks']
                 self.assertEqual(len(hooks['Stop']), 1)
                 self.assertIn(origin, (home / 'skills/jev-assist/SKILL.md').read_text(encoding='utf-8'))
+                self.assertFalse((home / 'skills/jev-assist/SKILL.md.before-jev-http').exists())
+                script = str(ROOT / 'server/uninstall-client.ps1').replace("'", "''")
+                target = str(home).replace("'", "''")
+                uninstall = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command',
+                             f"function Get-ScheduledTask {{ $null }}; & '{script}' -CodexHome '{target}'"]
+                for _ in range(2):
+                    result = subprocess.run(uninstall, capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual((home / 'config.toml').read_text(), original)
+                self.assertEqual(json.loads((home / 'hooks.json').read_text()), {})
+                self.assertFalse((home / 'jev-assist-client').exists())
+                self.assertFalse((home / 'skills/jev-assist/SKILL.md').exists())
             finally:
                 service.shutdown()
                 service.server_close()

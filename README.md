@@ -48,6 +48,16 @@ and a scheduled task for the local transport. It configures existing Codex/Orca
 account homes and backs up their configuration. Start a new Codex process after
 installation; existing sessions retain their previous provider connection.
 
+Uninstall from the dashboard command, or from a checkout:
+
+```powershell
+.\server\uninstall-client.ps1
+```
+
+This restores the install-time configuration backups, removes the local task and
+runtime, and preserves changed Jev-era settings beside the restored files as
+`.before-jev-uninstall`.
+
 Select `jev/auto` for automatic routing or a native model for a fixed selection.
 A skill by itself cannot change a running Codex process's model.
 

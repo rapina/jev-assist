@@ -70,6 +70,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     return {home, file, before, after: configure(before, origin, catalog), hooksFile, hooksBefore, hooksAfter: configureHooks(hooksBefore)};
   });
   const skill = readFileSync(new URL('../skills/jev-assist/SKILL.md', import.meta.url), 'utf8');
+  const managedSkill = skill.replaceAll('http://127.0.0.1:4320', new URL(origin).origin);
   for (const {home, file, before, after, hooksFile, hooksBefore, hooksAfter} of plans) {
     mkdirSync(home, {recursive: true});
     if (!existsSync(file + '.before-jev-local')) writePrivateFile(file + '.before-jev-local', before);
@@ -78,8 +79,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     writePrivateFile(hooksFile, hooksAfter);
     const skillFile = path.join(home, 'skills', 'jev-assist', 'SKILL.md');
     mkdirSync(path.dirname(skillFile), {recursive: true});
-    if (existsSync(skillFile) && !existsSync(skillFile + '.before-jev-http')) writePrivateFile(skillFile + '.before-jev-http', readFileSync(skillFile, 'utf8'));
-    writePrivateFile(skillFile, skill.replaceAll('http://127.0.0.1:4320', new URL(origin).origin));
+    if (existsSync(skillFile) && !existsSync(skillFile + '.before-jev-http') && readFileSync(skillFile, 'utf8') !== managedSkill) writePrivateFile(skillFile + '.before-jev-http', readFileSync(skillFile, 'utf8'));
+    writePrivateFile(skillFile, managedSkill);
   }
   writePrivateFile(fileURLToPath(new URL('./client.json', import.meta.url)), JSON.stringify({origin}));
   console.log(JSON.stringify({configuredHomes: plans.length, provider, origin, localService: true}));

@@ -271,6 +271,7 @@ def handle(handler):
             return True
         assets = {"/dashboard": ("dashboard.html", "text/html; charset=utf-8"),
                   "/dashboard/install-client.ps1": ("install-client.ps1", "text/plain; charset=utf-8"),
+                  "/dashboard/uninstall-client.ps1": ("uninstall-client.ps1", "text/plain; charset=utf-8"),
                   "/dashboard/dashboard.js": ("dashboard.js", "text/javascript; charset=utf-8"),
                   "/dashboard/dashboard.css": ("dashboard.css", "text/css; charset=utf-8")}
         if handler.command == "GET" and path in assets:

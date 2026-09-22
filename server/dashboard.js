@@ -164,8 +164,9 @@ setInterval(refresh, 1000);
 
 const serviceOrigin = location.origin.replaceAll("'", "''");
 $("skill-command").value = `& ([scriptblock]::Create((Invoke-RestMethod '${serviceOrigin}/dashboard/install-client.ps1'))) -ServiceUrl '${serviceOrigin}'`;
+$("uninstall-command").value = `& ([scriptblock]::Create((Invoke-RestMethod '${serviceOrigin}/dashboard/uninstall-client.ps1')))`;
 
-for (const [button, input, status] of [["copy-skill", "skill-command", "skill-copy-status"], ["copy-recovery", "recovery-command", "recovery-copy-status"]]) {
+for (const [button, input, status] of [["copy-skill", "skill-command", "skill-copy-status"], ["copy-uninstall", "uninstall-command", "uninstall-copy-status"], ["copy-recovery", "recovery-command", "recovery-copy-status"]]) {
   $(button).addEventListener("click", async () => {
     const field = $(input);
     try {

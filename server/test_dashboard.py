@@ -105,6 +105,7 @@ class DashboardTests(unittest.TestCase):
             self.assertEqual(set(archive.namelist()), {*audit.CLIENT_FILES, 'models.json'})
             self.assertEqual(json.loads(archive.read('models.json'))['models'], [{'slug': 'jev/auto', 'visibility': 'list'}, {'slug': LUNA, 'visibility': 'list'}])
         self.assertEqual(self.request('GET', '/dashboard/install-client.ps1')[0], 200)
+        self.assertEqual(self.request('GET', '/dashboard/uninstall-client.ps1')[0], 200)
 
     def test_trace_and_journal_are_private_and_secrets_redacted(self):
         record_id = audit.record(None, "received", task="key apikey_12345678901234567890",

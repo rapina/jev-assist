@@ -73,6 +73,7 @@ test('dashboard opens without client cookies and same-origin is translated', asy
     res.writeHead(req.headers.authorization === `Bearer ${internalKey}` ? 200 : 401,
       { 'set-cookie': 'jev_dashboard=fixture; HttpOnly; SameSite=Strict; Path=/dashboard' }); res.end('{}');
   });
+  assert.equal((await request(port, '/dashboard/uninstall-client.ps1')).status, 200);
   assert.equal((await request(port, '/dashboard/api/records')).status, 200);
   assert.equal((await request(port, '/dashboard/api/records', { headers: { origin: 'http://evil.invalid' } })).status, 403);
   assert.equal((await request(port, '/dashboard', { headers: { 'sec-fetch-site': 'cross-site' } })).status, 403);

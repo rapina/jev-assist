@@ -37,6 +37,10 @@
       <label for="skill-command" class="sr-only">스킬 설치 명령어</label>
       <textarea id="skill-command" rows="4" readonly spellcheck="false"></textarea>
       <div class="install-actions"><button id="copy-skill" type="button">명령어 복사</button><a href="/dashboard/skill.md" target="_blank" rel="noopener">스킬 내용 보기</a><span id="skill-copy-status" role="status"></span></div>
+      <p class="hint">제거하면 설치 전 설정을 복원하고 로컬 연결기를 삭제합니다. 설치 후 변경된 설정은 <code>.before-jev-uninstall</code> 파일로 보존됩니다.</p>
+      <label for="uninstall-command" class="sr-only">클라이언트 제거 명령어</label>
+      <textarea id="uninstall-command" rows="3" readonly spellcheck="false"></textarea>
+      <div class="install-actions"><button id="copy-uninstall" type="button">제거 명령어 복사</button><span id="uninstall-copy-status" role="status"></span></div>
     </details>
     <section class="stats" aria-label="기록 집계">
       <div><span>전체 요청</span><strong id="stat-total">0</strong></div><div><span>실행 완료</span><strong id="stat-completed">0</strong></div><div><span>실행 실패</span><strong id="stat-failed">0</strong></div>

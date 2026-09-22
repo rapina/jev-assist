@@ -16,7 +16,7 @@ function difficultyGauge(value) {
   }
   gauge.setAttribute("role", "img"); gauge.setAttribute("aria-label", `난이도 ${level}/4 · Jev 항목별 평가`);
   const cells = node("span", null, "gauge-cells"); cells.setAttribute("aria-hidden", "true");
-  for (let i = 1; i <= 4; i++) cells.append(node("span", i <= level ? "##" : "--", i <= level ? "filled" : ""));
+  for (let i = 1; i <= 4; i++) cells.append(node("span", null, i <= level ? "filled" : ""));
   gauge.append(cells, node("span", `0${level}/04`, "gauge-value"));
   return gauge;
 }

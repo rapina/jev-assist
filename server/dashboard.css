@@ -83,31 +83,74 @@ pre { background: #f6f6f6; border: 1px solid #aaa; padding: 9px; margin: 0 0 10p
 .skill-install { margin-bottom: 12px; }
 #skill-command { width: 100%; font: inherit; font-size: 12px; overflow-wrap: anywhere; margin-bottom: 8px; }
 
-/* Fixed-width segments keep difficulty comparable across every request. */
-.difficulty-gauge { display: flex; align-items: center; gap: 10px; min-height: 30px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.gauge-cells { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid #888; }
-.gauge-cells > span { display: inline-block; width: 19px; text-align: center; color: #aaa; background: #eee; font-size: 11px; line-height: 19px; }
-.gauge-cells > .filled { background: #555; color: #fff; font-weight: 700; }
-.level-3 .filled { background: #333; }
-.level-4 .filled { background: #111; }
-.level-4 .gauge-cells { border-color: #111; }
-.gauge-value { font-weight: 700; font-size: 12px; }
-.difficulty-unrated { padding: 3px 8px; color: #666; border: 1px dashed #999; font-size: 11px; letter-spacing: 1px; }
+/* Segmented tracks read like compact HP bars without losing exact scores. */
+.difficulty-gauge {
+  --gauge-fill: #6b7280;
+  display: inline-grid;
+  grid-template-columns: minmax(112px, 1fr) 34px;
+  align-items: center;
+  gap: 8px;
+  width: 158px;
+  min-height: 24px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.level-2 { --gauge-fill: #28745f; }
+.level-3 { --gauge-fill: #9a641b; }
+.level-4 { --gauge-fill: #9c3232; }
+.gauge-cells {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
+  width: 100%;
+  height: 16px;
+  padding: 2px;
+  overflow: hidden;
+  background: #d9dde0;
+  border: 1px solid #687078;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 18%), 0 1px 0 #fff;
+}
+.gauge-cells > span {
+  min-width: 0;
+  background: #f7f8f8;
+  border: 1px solid #c8cdd0;
+  border-radius: 1px;
+}
+.gauge-cells > .filled {
+  background: var(--gauge-fill);
+  border-color: rgb(0 0 0 / 18%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 30%);
+}
+.gauge-value { color: #4b5157; font-weight: 700; font-size: 11px; text-align: right; }
+.difficulty-unrated {
+  display: inline-flex;
+  align-items: center;
+  width: 158px;
+  min-height: 24px;
+  padding: 3px 9px;
+  color: #626970;
+  background: repeating-linear-gradient(135deg, #f7f8f8, #f7f8f8 5px, #eceeef 5px, #eceeef 10px);
+  border: 1px dashed #8b9298;
+  border-radius: 2px;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
 .row-id { color: #777; font-size: 10px; }
-.row-button:hover .gauge-cells { outline: 1px solid #111; }
+.row-button:hover .gauge-cells { border-color: #111; box-shadow: inset 0 1px 2px rgb(0 0 0 / 22%), 0 0 0 1px #111; }
 .row-button:hover { text-decoration: none; }
 .detail-heading .difficulty-gauge { gap: 14px; }
 .detail-heading .gauge-value { font-size: 20px; }
 
-.dimension-gauges { display: grid; grid-template-columns: 1fr; gap: 2px; }
-.dimension-row { display: flex; align-items: center; gap: 7px; }
-.dimension-label { width: 4ch; color: #555; font-size: 10px; font-weight: 400; }
-.dimension-row .difficulty-gauge { min-height: 18px; gap: 6px; }
-.dimension-row .gauge-cells { padding: 1px; gap: 1px; }
-.dimension-row .gauge-cells > span { width: 14px; line-height: 13px; font-size: 9px; }
+.dimension-gauges { display: grid; grid-template-columns: 1fr; gap: 4px; width: 100%; max-width: 210px; }
+.dimension-row { display: grid; grid-template-columns: 4ch minmax(0, 1fr); align-items: center; gap: 8px; }
+.dimension-label { color: #555; font-size: 10px; font-weight: 700; }
+.dimension-row .difficulty-gauge { min-height: 20px; gap: 7px; }
+.dimension-row .gauge-cells { height: 14px; }
 .dimension-row .gauge-value { font-size: 10px; }
-.dimension-row .difficulty-unrated { font-size: 9px; padding: 0 4px; border: 0; }
-.detail-heading .dimension-gauges { grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.dimension-row .difficulty-unrated { font-size: 9px; }
+.detail-heading .dimension-gauges { grid-template-columns: 1fr; gap: 6px; max-width: 260px; }
+.detail-heading .difficulty-gauge { width: 210px; grid-template-columns: minmax(150px, 1fr) 40px; }
 .distribution { border: 1px solid #222; margin-bottom: 12px; }
 .distribution-bar { display: flex; min-height: 32px; margin: 10px; overflow: hidden; background: #f3f3f3; }
 .share { flex-basis: 0; min-width: 1px; overflow: hidden; white-space: nowrap; text-align: center; font-size: 11px; line-height: 32px; border-right: 1px solid white; }

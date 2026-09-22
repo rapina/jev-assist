@@ -28,7 +28,7 @@ storage_error = None
 CLIENT_FILES = (
     "server/configure-client.mjs", "server/observer.mjs", "server/local-client.mjs", "server/install-local-service.ps1",
     "router/src/toml-structure.mjs", "router/src/file-security.mjs",
-    "skills/jev-assist/SKILL.md", "vendor/canny/package.json",
+    "vendor/canny/package.json",
     "vendor/canny/LICENSE", "vendor/canny/UPSTREAM.md",
     *(f"vendor/canny/dist/{name}.js" for name in ("events", "hook", "config", "checks", "ledger", "jev", "rules")),
 )
@@ -261,10 +261,6 @@ def handle(handler):
                 _sessions[session] = time.monotonic() + 12 * 3600
             _headers(handler, 303, "text/plain", b"", (("Location", "/dashboard"),
                      ("Set-Cookie", f"jev_dashboard={session}; HttpOnly; SameSite=Strict; Path=/dashboard; Max-Age=43200")))
-            return True
-        if handler.command == "GET" and path == "/dashboard/skill.md":
-            skill = Path(__file__).resolve().parent.parent / "skills" / "jev-assist" / "SKILL.md"
-            _headers(handler, 200, "text/plain; charset=utf-8", skill.read_bytes())
             return True
         if handler.command == "GET" and path == "/dashboard/client.zip":
             _headers(handler, 200, "application/zip", client_bundle())

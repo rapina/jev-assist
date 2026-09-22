@@ -102,10 +102,12 @@ homes. The Windows runtime needs `server/requirements-windows.txt` in
 controls only Jev; `router` delegates to the embedded runtime. Do not replace
 a task belonging to another checkout or Codex home.
 
-The optional skill is in `skills/jev-assist`. `./install-skill.ps1`
-installs it for the current agent home without replacing an existing skill.
-Runtime installation does not require skill installation. Team distribution
-must use this fork's published URL, not upstream's unmodified Windows files.
+The Windows checkout installer configures standalone `~/.codex` and Orca's
+global Codex launch arguments. It must not copy router settings into individual
+`orca/codex-accounts` homes; newly added accounts inherit the global arguments.
+
+Team distribution must use this fork's published URL, not upstream's
+unmodified Windows files.
 
 The macOS installation uses `router/` directly,
 preserves existing provider selection, idempotently configures the `jev`

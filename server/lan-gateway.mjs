@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { privateFileIsProtected } from '../router/src/file-security.mjs';
 
 const BACKEND_ORIGIN = 'http://127.0.0.1:4319';
-const DASHBOARD_GET = new Set(['/dashboard', '/dashboard/', '/dashboard/dashboard.js', '/dashboard/dashboard.css', '/dashboard/skill.md', '/dashboard/install-client.ps1', '/dashboard/uninstall-client.ps1', '/dashboard/client.zip',
+const DASHBOARD_GET = new Set(['/dashboard', '/dashboard/', '/dashboard/dashboard.js', '/dashboard/dashboard.css', '/dashboard/install-client.ps1', '/dashboard/uninstall-client.ps1', '/dashboard/client.zip',
    '/dashboard/api/records', '/dashboard/api/record', '/dashboard/api/observations']);
 const HOP_HEADERS = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization',
   'te', 'trailer', 'transfer-encoding', 'upgrade']);

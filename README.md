@@ -43,10 +43,10 @@ cd jev-assist
 .\server\install-client.ps1 -ServiceUrl 'http://YOUR_SERVICE:4320'
 ```
 
-The installer adds the user-level skill, model catalog, local connection settings
-and a scheduled task for the local transport. It configures existing Codex/Orca
-account homes and backs up their configuration. Start a new Codex process after
-installation; existing sessions retain their previous provider connection.
+The installer adds the model catalog, local connection settings and a scheduled
+task for the local transport. It configures existing Codex/Orca account homes
+and backs up their configuration. Start a new Codex process after installation;
+existing sessions retain their previous provider connection.
 
 Uninstall from the dashboard command, or from a checkout:
 
@@ -59,7 +59,10 @@ runtime, and preserves changed Jev-era settings beside the restored files as
 `.before-jev-uninstall`.
 
 Select `jev/auto` for automatic routing or a native model for a fixed selection.
-A skill by itself cannot change a running Codex process's model.
+
+The Windows checkout installer configures standalone Codex in `~/.codex` and
+Orca's global Codex launch arguments. Orca account homes are not modified, so
+accounts added later inherit the same router and model catalog automatically.
 
 ## Service and API
 

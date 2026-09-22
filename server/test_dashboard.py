@@ -87,14 +87,9 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(self.request("POST", "/dashboard/api/review", {}, Cookie=cookie)[0], 404)
         self.assertEqual(self.request("POST", "/ask", {}, Cookie=cookie, Origin=audit.ORIGIN)[0], 401)
 
-    def test_skill_download_and_removed_manual_review(self):
+    def test_removed_skill_download(self):
         cookie = self.login()
-        for route in ("/dashboard/api/review", "/dashboard/api/export"):
-            self.assertEqual(self.request("GET", route, Cookie=cookie)[0], 404)
-        self.assertEqual(self.request("POST", "/dashboard/api/review", {}, Cookie=cookie, Origin=audit.ORIGIN)[0], 404)
-        status, _, body = self.request("GET", "/dashboard/skill.md")
-        self.assertEqual(status, 200)
-        self.assertIn(b"name: jev-assist", body)
+        self.assertEqual(self.request("GET", "/dashboard/skill.md", Cookie=cookie)[0], 404)
 
     def test_client_bundle_contains_only_runtime_and_jev_catalog(self):
         (Path(self.tmp) / 'merged-models.json').write_text(json.dumps({'models': [{'slug': 'jev/auto'}, {'slug': LUNA, 'visibility': 'hide'}, {'slug': 'other'}]}), encoding='utf-8')

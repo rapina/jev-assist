@@ -25,7 +25,7 @@ if (process.platform === "win32") {
   // Elevated SSH installs otherwise give the file to Administrators, while the
   // unelevated Jev task requires ownership by its actual user, not a group.
   const result = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
-    "$ErrorActionPreference='Stop'; $acl=Get-Acl -LiteralPath $env:JEV_CREDENTIAL_PATH; $acl.SetOwner([Security.Principal.WindowsIdentity]::GetCurrent().User); Set-Acl -LiteralPath $env:JEV_CREDENTIAL_PATH -AclObject $acl"],
+    "$ErrorActionPreference='Stop'; $current=[Security.Principal.WindowsIdentity]::GetCurrent(); $acl=Get-Acl -LiteralPath $env:JEV_CREDENTIAL_PATH; $owner=([Security.Principal.NTAccount]$acl.Owner).Translate([Security.Principal.SecurityIdentifier]); if ($owner -ne $current.User) { $acl.SetOwner($current.User); Set-Acl -LiteralPath $env:JEV_CREDENTIAL_PATH -AclObject $acl }"],
     { env: { ...process.env, JEV_CREDENTIAL_PATH: keyPath }, windowsHide: true, encoding: "utf8" });
   if (result.error || result.status !== 0) throw new Error("Could not set Jev credential ownership");
 }

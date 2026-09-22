@@ -80,8 +80,8 @@ pre { background: #f6f6f6; border: 1px solid #aaa; padding: 9px; margin: 0 0 10p
 @media (max-width: 1000px) { .workspace { grid-template-columns: 1fr; } .table-scroll { max-height: 420px; } }
 @media (max-width: 600px) { main { padding: 8px; } .topbar { align-items: flex-start; flex-direction: column; padding: 8px; gap: 8px; } .toolbar { width: 100%; } .stats div { flex: 1 1 130px; border-bottom: 1px solid #ccc; padding: 6px 8px; } .filters { grid-template-columns: 1fr 1fr; } .search { grid-column: 1 / -1; } .table-scroll table { min-width: 660px; } }
 
-.skill-install { margin-bottom: 12px; }
-#skill-command, #uninstall-command { width: 100%; font: inherit; font-size: 12px; overflow-wrap: anywhere; margin-bottom: 8px; }
+.client-install { margin-bottom: 12px; }
+#client-command, #uninstall-command { width: 100%; font: inherit; font-size: 12px; overflow-wrap: anywhere; margin-bottom: 8px; }
 
 /* Segmented tracks read like compact HP bars without losing exact scores. */
 .difficulty-gauge {

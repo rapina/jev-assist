@@ -1,4 +1,4 @@
-"""Exercise the distributable Windows skill and account-home resolution."""
+"""Exercise the distributable Windows client and account-home resolution."""
 import json
 import io
 import zipfile
@@ -78,8 +78,6 @@ class WindowsInstall(unittest.TestCase):
                 self.assertFalse((home / 'auth.json').exists())
                 hooks = json.loads((home / 'hooks.json').read_text())['hooks']
                 self.assertEqual(len(hooks['Stop']), 1)
-                self.assertIn(origin, (home / 'skills/jev-assist/SKILL.md').read_text(encoding='utf-8'))
-                self.assertFalse((home / 'skills/jev-assist/SKILL.md.before-jev-http').exists())
                 script = str(ROOT / 'server/uninstall-client.ps1').replace("'", "''")
                 target = str(home).replace("'", "''")
                 uninstall = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command',
@@ -90,23 +88,9 @@ class WindowsInstall(unittest.TestCase):
                 self.assertEqual((home / 'config.toml').read_text(), original)
                 self.assertEqual(json.loads((home / 'hooks.json').read_text()), {})
                 self.assertFalse((home / 'jev-assist-client').exists())
-                self.assertFalse((home / 'skills/jev-assist/SKILL.md').exists())
             finally:
                 service.shutdown()
                 service.server_close()
-
-    def test_optional_skill_installs_and_refuses_overwrite(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            command = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
-                       str(ROOT / "install-skill.ps1"), "-SkillsDirectory", tmp]
-            subprocess.run(command, capture_output=True, check=True)
-            installed = Path(tmp) / "jev-assist/SKILL.md"
-            self.assertEqual(installed.read_bytes(), (ROOT / "skills/jev-assist/SKILL.md").read_bytes())
-            installed.write_text("existing user customization")
-            result = subprocess.run(command, capture_output=True)
-            self.assertNotEqual(result.returncode, 0)
-            self.assertEqual(installed.read_text(), "existing user customization")
-
 
 if __name__ == "__main__":
     unittest.main()

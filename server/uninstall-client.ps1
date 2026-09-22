@@ -50,29 +50,9 @@ if (-not $CodexHome) {
   }
 }
 
-$ManagedSkill = $null
-$Template = Join-Path $Runtime 'skills/jev-assist/SKILL.md'
-$ClientConfig = Join-Path $Runtime 'server/client.json'
-if ((Test-Path -LiteralPath $Template) -and (Test-Path -LiteralPath $ClientConfig)) {
-  try {
-    $Origin = ([IO.File]::ReadAllText($ClientConfig) | ConvertFrom-Json).origin
-    $ManagedSkill = [IO.File]::ReadAllText($Template).Replace('http://127.0.0.1:4320', $Origin)
-  } catch {}
-}
-
 foreach ($ConfiguredHome in $Homes) {
   Restore-Backup (Join-Path $ConfiguredHome 'config.toml') (Join-Path $ConfiguredHome 'config.toml.before-jev-local')
   Restore-Backup (Join-Path $ConfiguredHome 'hooks.json') (Join-Path $ConfiguredHome 'hooks.json.before-jev-observer')
-  $Skill = Join-Path $ConfiguredHome 'skills/jev-assist/SKILL.md'
-  $SkillBackup = $Skill + '.before-jev-http'
-  $CurrentSkill = if (Test-Path -LiteralPath $Skill) { [IO.File]::ReadAllText($Skill).Replace("`r`n", "`n") } else { $null }
-  if (Test-Path -LiteralPath $SkillBackup) {
-    Restore-Backup $Skill $SkillBackup
-  } elseif ($ManagedSkill -ne $null -and $CurrentSkill -ceq $ManagedSkill.Replace("`r`n", "`n")) {
-    Remove-Item -LiteralPath $Skill
-    $SkillDirectory = Split-Path -Parent $Skill
-    if (-not (Get-ChildItem -LiteralPath $SkillDirectory -Force)) { Remove-Item -LiteralPath $SkillDirectory }
-  }
 }
 
 if (Test-Path -LiteralPath $Runtime) {

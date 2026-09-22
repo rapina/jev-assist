@@ -31,12 +31,12 @@
         <p class="recovery-note">자동 모드는 서버 복구 후 다음 요청부터 Jev 판단 재개 · 장애 중 기록은 대시보드에서 누락될 수 있음 · OpenAI 자체 제한은 그대로 적용</p>
       </div>
     </section>
-    <details class="skill-install">
+    <details class="client-install">
       <summary>클라이언트 설치 / PowerShell</summary>
-      <p class="hint">Docker는 필요 없습니다. Node.js 22.19+가 없으면 WinGet으로 자동 설치합니다. 스킬·로컬 연결기를 설치한 뒤 Codex/Orca를 완전히 종료하고 새 대화를 시작하세요. 관찰은 /hooks에서 활성화합니다.</p>
-      <label for="skill-command" class="sr-only">스킬 설치 명령어</label>
-      <textarea id="skill-command" rows="4" readonly spellcheck="false"></textarea>
-      <div class="install-actions"><button id="copy-skill" type="button">명령어 복사</button><a href="/dashboard/skill.md" target="_blank" rel="noopener">스킬 내용 보기</a><span id="skill-copy-status" role="status"></span></div>
+      <p class="hint">Docker는 필요 없습니다. Node.js 22.19+가 없으면 WinGet으로 자동 설치합니다. 모델 카탈로그와 로컬 연결기를 설치한 뒤 Codex/Orca를 완전히 종료하고 새 대화를 시작하세요. 관찰은 /hooks에서 활성화합니다.</p>
+      <label for="client-command" class="sr-only">클라이언트 설치 명령어</label>
+      <textarea id="client-command" rows="4" readonly spellcheck="false"></textarea>
+      <div class="install-actions"><button id="copy-client" type="button">명령어 복사</button><span id="client-copy-status" role="status"></span></div>
       <p class="hint">제거하면 설치 전 설정을 복원하고 로컬 연결기를 삭제합니다. 설치 후 변경된 설정은 <code>.before-jev-uninstall</code> 파일로 보존됩니다.</p>
       <label for="uninstall-command" class="sr-only">클라이언트 제거 명령어</label>
       <textarea id="uninstall-command" rows="3" readonly spellcheck="false"></textarea>

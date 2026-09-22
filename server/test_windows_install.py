@@ -29,6 +29,12 @@ class StatePaths(unittest.TestCase):
             self.assertEqual(paths[:3], [str(Path(tmp) / "codex-router")] * 3)
             self.assertEqual(paths[3], str(Path(tmp) / "codex-router/jev-router-live.jsonl"))
 
+    def test_windows_client_bootstraps_node_without_docker(self):
+        installer = (ROOT / 'server/install-client.ps1').read_text()
+        self.assertIn('winget', installer.lower())
+        self.assertIn('OpenJS.NodeJS.LTS', installer)
+        self.assertIn('Docker is not required', installer)
+
 
 @unittest.skipUnless(os.name == "nt", "Windows installer")
 class WindowsInstall(unittest.TestCase):

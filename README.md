@@ -31,7 +31,8 @@ server-wide quota lockout. Model availability depends on the local Codex account
 
 ## Windows client
 
-Requires Node.js 22.19+ and Codex signed in with ChatGPT.
+Requires Codex signed in with ChatGPT. The installer uses WinGet to install
+Node.js 22.19+ when needed. Docker is not required.
 
 Open your team's Jev Assist `/dashboard` URL and run its installation command.
 Alternatively, clone this repository and use your service's HTTP origin:

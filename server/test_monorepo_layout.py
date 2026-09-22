@@ -40,6 +40,11 @@ class EmbeddedRouterLayout(unittest.TestCase):
         self.assertNotIn("install.ps1\" -SkipSmoke", deploy)
         self.assertNotIn("router\\src\\service.mjs", deploy)
 
+    def test_windows_service_matches_the_venv_redirector_relative_script(self):
+        service = (ROOT / "server" / "service-windows.ps1").read_text()
+        self.assertIn("|server[\\\\/]jev_server\\.py", service)
+        self.assertIn("$Parent.ProcessId -ne $Owned.pid", service)
+
     def test_model_configuration_is_idempotent_and_preserves_other_routes(self):
         with tempfile.TemporaryDirectory() as temp:
             state_dir = pathlib.Path(temp) / "state"

@@ -21,7 +21,7 @@ function Stop-JevTask {
   # Windows venv redirectors can survive termination of the task's PowerShell.
   # Stop only our exact script, owned by this user, with our venv parent.
   $ServerScript = Join-Path $PSScriptRoot 'jev_server.py'
-  $Tail = '\s+-X\s+utf8\s+"?' + [regex]::Escape($ServerScript) + '"?\s*$'
+  $Tail = '\s+-X\s+utf8\s+"?(?:' + [regex]::Escape($ServerScript) + '|server[\\/]jev_server\.py)"?\s*$'
   $Marker = Join-Path $StateDirectory 'jev-service-process.json'
   if (-not (Test-Path -LiteralPath $Marker)) { return }
   $Owned = Get-Content -LiteralPath $Marker -Raw | ConvertFrom-Json

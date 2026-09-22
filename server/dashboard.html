@@ -9,12 +9,11 @@
 </head>
 <body>
   <header class="topbar">
-    <h1><a class="brand" href="/dashboard/" aria-label="Jev 대시보드">JEV ASSIST<span>ROUTING / REQUESTS</span></a></h1>
+    <h1><a class="brand" href="/dashboard/" aria-label="Jev 대시보드">JEV ASSIST<span>ROUTING / REQUESTS</span><span id="build" class="build" title="실행 중인 Jev Assist 커밋">commit —</span></a></h1>
     <div class="toolbar"><span id="connection" role="status">연결 중</span><button id="pause" type="button" aria-pressed="false">일시 정지</button></div>
   </header>
   <main>
     <div id="error" class="notice error" role="alert" hidden></div>
-    <div id="auth" class="notice" hidden>서비스 접속 상태를 확인하고 페이지를 새로 고치세요.</div>
     <section class="recovery" aria-labelledby="recovery-title">
       <h2 id="recovery-title">장애 시 계속 작업</h2>
       <div class="recovery-body">

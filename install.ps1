@@ -86,18 +86,12 @@ Invoke-Checked node @("$Repo\server\configure-auth.mjs")
 Invoke-Checked powershell.exe @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "$Router\codex-router.ps1", 'chatgpt-session', 'enable')
 Invoke-Checked node @("$Router\src\refresh-catalog.mjs")
 Invoke-Checked node @("$Router\src\control.mjs", 'picker', 'set', 'jev/auto', 'show')
-$StandaloneCodexDirectory = Join-Path $env:USERPROFILE '.codex'
-$SavedCodexHome = $env:CODEX_HOME
-$SavedRouterState = $env:MODEL_ROUTER_STATE_DIR
-try {
-  $env:CODEX_HOME = $StandaloneCodexDirectory
-  $env:MODEL_ROUTER_STATE_DIR = $StateDirectory
-  Invoke-Checked node @("$Router\src\config-manager.mjs", 'enable')
-} finally {
-  $env:CODEX_HOME = $SavedCodexHome
-  $env:MODEL_ROUTER_STATE_DIR = $SavedRouterState
-}
-Invoke-Checked node @("$Repo\server\configure-orca.mjs", 'http://127.0.0.1:4202', (Join-Path $StateDirectory 'merged-models.json'))
+# The server machine's own Codex/Orca are NOT pointed at the router here. Routing
+# every request through router -> litellm -> forwarder -> jev_server made the
+# central service an execution proxy for full conversations (including
+# compactions), which is the path the dashboard client install replaces:
+# workstations run server/install-client.ps1 against the gateway and execute
+# locally, sending only bounded task evidence to /v1/route.
 Invoke-Checked powershell.exe @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "$Repo\server\service-windows.ps1", 'install', '-CodexDirectory', $CodexDirectory, '-StateDirectory', $StateDirectory)
 Invoke-Checked node @("$Router\src\service.mjs", 'restart')
 if (-not $SkipSmoke) { Invoke-Checked $Python @("$Repo\server\smoke.py") }
@@ -108,4 +102,4 @@ $UserPath = [string][Environment]::GetEnvironmentVariable('Path', 'User')
 if ($Bin -notin ($UserPath -split ';')) {
   [Environment]::SetEnvironmentVariable('Path', ($UserPath.TrimEnd(';') + ';' + $Bin), 'User')
 }
-Write-Output 'Installed. Terminal Codex and Orca global defaults now share Jev Assist; new Orca accounts require no setup. Start a new Codex process.'
+Write-Output 'Installed. This machine''s Codex/Orca were not reconfigured: install the client from the dashboard (server\install-client.ps1 -ServiceUrl <gateway origin>) on every workstation, including this one.'

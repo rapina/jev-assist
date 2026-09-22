@@ -56,7 +56,7 @@ export function createGatewayServer({ internalKey,
     if (request.headers['transfer-encoding'] || request.method === 'POST' && (!length || !/^\d+$/.test(length))) {
       return reply(response, 400, { error: 'A fixed Content-Length is required' });
     }
-    const maximum = pathname === '/v1/route' ? 24000 : pathname === '/v1/outcome' ? 4096 : pathname === '/dashboard/session' ? 1024 : pathname === '/v1/ask' ? 512 * 1024 : pathname === '/v1/observations' ? 65536 : 16384;
+    const maximum = pathname === '/v1/route' ? 24000 : pathname === '/v1/outcome' ? 4096 : pathname === '/v1/ask' ? 512 * 1024 : pathname === '/v1/observations' ? 65536 : 16384;
     if (length !== undefined && (!/^\d+$/.test(length) || Number(length) > maximum || request.method === 'GET' && Number(length) > 0)) {
       return reply(response, 413, { error: 'Request body is not permitted or exceeds its limit' });
     }

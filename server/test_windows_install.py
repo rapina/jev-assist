@@ -35,6 +35,17 @@ class StatePaths(unittest.TestCase):
         self.assertIn('OpenJS.NodeJS.LTS', installer)
         self.assertIn('Docker is not required', installer)
 
+    def test_server_installer_never_routes_its_own_codex_through_the_router(self):
+        # Pointing this machine's Codex/Orca at the router made the central
+        # service an execution proxy for whole conversations (compactions
+        # included). Execution belongs to the dashboard client on every
+        # workstation, the server machine included.
+        installer = (ROOT / 'install.ps1').read_text()
+        self.assertNotIn("config-manager.mjs\", 'enable'", installer)
+        self.assertNotIn('configure-orca', installer)
+        self.assertNotIn('openai_base_url', installer)
+        self.assertFalse((ROOT / 'server/configure-orca.mjs').exists())
+
 
 @unittest.skipUnless(os.name == "nt", "Windows installer")
 class WindowsInstall(unittest.TestCase):

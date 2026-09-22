@@ -20,10 +20,7 @@ class DashboardTests(unittest.TestCase):
     def setUp(self):
         self.tmp = self.enterContext(tempfile.TemporaryDirectory())
         self.enterContext(mock.patch.object(audit, "DB_PATH", Path(self.tmp) / "audit.sqlite3"))
-        self.enterContext(mock.patch.object(audit, "_logins", {}))
-        self.enterContext(mock.patch.object(audit, "_sessions", {}))
         self.enterContext(mock.patch.object(jev, "local_secret", return_value="fixture-local"))
-        self.enterContext(mock.patch.object(audit, "local_secret", return_value="fixture-local"))
         self.server = LocalServer(("127.0.0.1", 0), jev.Handler)
         self.server.audit_enabled = True
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
@@ -38,8 +35,7 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(self.request("POST", "/v1/observations", body, Authorization="Bearer fixture-local")[0], 200)
         audit.observe({**body, "updated": 10, "verified": True})
         self.assertFalse(audit.observations()["sessions"][0]["verified"])
-        self.assertEqual(self.request("GET", "/dashboard/api/observations")[0], 401)
-        status, _, data = self.request("GET", "/dashboard/api/observations", Cookie=self.login())
+        status, _, data = self.request("GET", "/dashboard/api/observations")
         self.assertEqual(status, 200)
         self.assertEqual(self.request("GET", "/dashboard/api/observations", Authorization="Bearer fixture-local")[0], 200)
         self.assertEqual(json.loads(data)["sessions"][0]["verdict"], "block")
@@ -57,19 +53,6 @@ class DashboardTests(unittest.TestCase):
         finally:
             connection.close()
 
-    def login(self):
-        status, _, body = self.request("POST", "/dashboard/session", {}, Authorization="Bearer fixture-local")
-        self.assertEqual(status, 200)
-        url = json.loads(body)["url"]
-        path = url.removeprefix(audit.ORIGIN)
-        status, headers, _ = self.request("GET", path)
-        self.assertEqual(status, 303)
-        self.assertEqual(headers["Location"], "/dashboard")
-        self.assertIn("HttpOnly", headers["Set-Cookie"])
-        self.assertIn("SameSite=Strict", headers["Set-Cookie"])
-        self.assertEqual(self.request("GET", path)[0], 401)
-        return headers["Set-Cookie"].split(";", 1)[0]
-
     def make_record(self):
         record_id = audit.record(None, "received", task="Review cache logic", policy_version="fixture",
                                  request={"model": "jev-latest", "state": {"task": "Review cache logic"}, "questions": QUESTIONS})
@@ -77,19 +60,19 @@ class DashboardTests(unittest.TestCase):
                      outcome={"model": LUNA, "status": 200, "completed_status": 200})
         return record_id
 
-    def test_real_cookie_session_and_browser_boundary(self):
-        self.assertEqual(self.request("GET", "/dashboard/api/records")[0], 401)
-        self.assertEqual(self.request("POST", "/dashboard/session", {})[0], 401)
-        self.assertEqual(self.request("POST", "/dashboard/session", {}, Authorization="Bearer fixture-local", Origin="https://other.invalid")[0], 403)
-        cookie = self.login()
-        self.assertEqual(self.request("GET", "/dashboard/api/records", Cookie=cookie)[0], 200)
-        self.assertEqual(self.request("GET", "/dashboard/api/records", Cookie=cookie, Host="other.invalid")[0], 403)
-        self.assertEqual(self.request("POST", "/dashboard/api/review", {}, Cookie=cookie)[0], 404)
-        self.assertEqual(self.request("POST", "/ask", {}, Cookie=cookie, Origin=audit.ORIGIN)[0], 401)
+    def test_dashboard_needs_no_login_but_keeps_browser_boundaries(self):
+        self.assertEqual(self.request("GET", "/dashboard/api/records")[0], 200)
+        self.assertEqual(self.request("GET", "/dashboard/api/records", Cookie="jev_dashboard=stale")[0], 200)
+        self.assertEqual(self.request("GET", "/dashboard/api/records", Host="other.invalid")[0], 403)
+        self.assertEqual(self.request("GET", "/dashboard/api/records", Origin="https://other.invalid")[0], 403)
+        self.assertEqual(self.request("GET", "/dashboard/login?code=x")[0], 404)
+        self.assertEqual(self.request("POST", "/dashboard/session", {}, Authorization="Bearer fixture-local")[0], 404)
+        self.assertEqual(self.request("POST", "/dashboard/api/review", {})[0], 404)
+        # The dashboard never becomes a way onto the bearer-guarded API.
+        self.assertEqual(self.request("POST", "/ask", {}, Origin=audit.ORIGIN)[0], 401)
 
     def test_removed_skill_download(self):
-        cookie = self.login()
-        self.assertEqual(self.request("GET", "/dashboard/skill.md", Cookie=cookie)[0], 404)
+        self.assertEqual(self.request("GET", "/dashboard/skill.md")[0], 404)
 
     def test_client_bundle_contains_only_runtime_and_jev_catalog(self):
         (Path(self.tmp) / 'merged-models.json').write_text(json.dumps({'models': [{'slug': 'jev/auto'}, {'slug': LUNA, 'visibility': 'hide'}, {'slug': 'other'}]}), encoding='utf-8')
@@ -130,9 +113,8 @@ class DashboardTests(unittest.TestCase):
             self.assertNotIn('PRIVATE_', stored)
             legacy = {'events': [], 'task': 'PRIVATE_PROMPT', 'request': {'state': 'PRIVATE_INPUT'}, 'response': {'text': 'PRIVATE_RESPONSE'}, 'decision': {'model': LUNA}}
             db.execute('UPDATE records SET body=?,review=? WHERE id=?', (json.dumps(legacy), '"PRIVATE_REVIEW"', record_id))
-        cookie = self.login()
         for route in ('/dashboard/api/records', '/dashboard/api/record?id=' + record_id):
-            status, _, body = self.request('GET', route, Cookie=cookie)
+            status, _, body = self.request('GET', route)
             self.assertEqual(status, 200)
             self.assertNotIn(b'PRIVATE_', body)
             self.assertIn(b'unknown', body)

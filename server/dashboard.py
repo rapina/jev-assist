@@ -1,7 +1,6 @@
-"""Local decision traces, human review, and the authenticated browser dashboard."""
+"""Local decision traces, human review, and the browser dashboard."""
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from http.cookies import CookieError, SimpleCookie
 import json
 import io
 import zipfile
@@ -9,21 +8,18 @@ import math
 import os
 from pathlib import Path
 import re
-import secrets
 import sqlite3
 import threading
-import time
 from urllib.parse import parse_qs, urlsplit
 import uuid
 
-from local_runtime import STATE, open_file, private, authorized, local_secret
+from local_runtime import STATE, open_file, private, repo_commit
 from routing_policy import TIERS
 
 DB_PATH = Path(STATE) / "jev-audit.sqlite3"
 ORIGIN = "http://127.0.0.1:4319"
+COMMIT = repo_commit()
 _lock = threading.RLock()
-_logins = {}
-_sessions = {}
 storage_error = None
 CLIENT_FILES = (
     "server/configure-client.mjs", "server/observer.mjs", "server/local-client.mjs", "server/install-local-service.ps1",
@@ -179,7 +175,8 @@ def list_records(query):
                           "gate": outcome.get("gate", selected.get("gate")),
                           "jev_ms": outcome.get("jev_ms"), "total_ms": outcome.get("total_ms"),
                           "http": outcome.get("status"), "completed": item["phase"] == "completed"})
-    return {"records": summaries, "stats": stats, "distribution": distribution, "storage_error": storage_error}
+    return {"records": summaries, "stats": stats, "distribution": distribution, "storage_error": storage_error,
+            "build": {"commit": COMMIT}}
 
 
 def observe(body):
@@ -209,20 +206,6 @@ def observations():
     return {"sessions": [{**json.loads(r["body"]), "received": r["received"]} for r in rows]}
 
 
-def new_login():
-    with _lock:
-        now = time.monotonic()
-        for table in (_logins, _sessions):
-            for key, expiry in list(table.items()):
-                if expiry <= now:
-                    del table[key]
-        if len(_logins) >= 32 or len(_sessions) >= 32:
-            raise ValueError("Too many dashboard sessions")
-        code = secrets.token_urlsafe(32)
-        _logins[code] = now + 60
-    return {"url": ORIGIN + "/dashboard/login?code=" + code}
-
-
 def _headers(handler, code, kind, data, extra=()):
     handler.send_response(code)
     for name, value in (("Content-Type", kind), ("Content-Length", str(len(data))),
@@ -239,10 +222,15 @@ def _json(handler, code, value):
 
 
 def handle(handler):
-    """Dashboard routes only. /dashboard/session uses the existing bearer guard."""
+    """Dashboard routes only.
+
+    No login: the dashboard is reachable from this machine (loopback) and from
+    the operator-allowed gateway clients only, and its records carry routing
+    metadata, never prompts. Same-origin browser boundaries still apply.
+    """
     parts = urlsplit(handler.path)
     path = parts.path.rstrip("/")
-    if not path.startswith("/dashboard") or path == "/dashboard/session":
+    if not path.startswith("/dashboard"):
         return False
     if (handler.headers.get("Host") != "127.0.0.1:4319"
             or handler.headers.get("Origin") not in (None, ORIGIN)
@@ -251,17 +239,6 @@ def handle(handler):
         return True
     query = parse_qs(parts.query)
     try:
-        if handler.command == "GET" and path == "/dashboard/login":
-            with _lock:
-                expires = _logins.pop(query.get("code", [""])[0], 0)
-                if expires <= time.monotonic():
-                    _json(handler, 401, {"error": "Dashboard login expired"})
-                    return True
-                session = secrets.token_urlsafe(32)
-                _sessions[session] = time.monotonic() + 12 * 3600
-            _headers(handler, 303, "text/plain", b"", (("Location", "/dashboard"),
-                     ("Set-Cookie", f"jev_dashboard={session}; HttpOnly; SameSite=Strict; Path=/dashboard; Max-Age=43200")))
-            return True
         if handler.command == "GET" and path == "/dashboard/client.zip":
             _headers(handler, 200, "application/zip", client_bundle())
             return True
@@ -274,14 +251,7 @@ def handle(handler):
             name, kind = assets[path]
             _headers(handler, 200, kind, Path(__file__).with_name(name).read_bytes())
             return True
-        cookie = SimpleCookie(handler.headers.get("Cookie", ""))
-        session = cookie.get("jev_dashboard")
-        with _lock:
-            valid = (authorized(handler.headers.get("Authorization"), local_secret())
-                     or bool(session and _sessions.get(session.value, 0) > time.monotonic()))
-        if not valid:
-            _json(handler, 401, {"error": "Run jev-assist dashboard to sign in"})
-        elif handler.command == "GET" and path == "/dashboard/api/observations":
+        if handler.command == "GET" and path == "/dashboard/api/observations":
             _json(handler, 200, observations())
         elif handler.command == "GET" and path == "/dashboard/api/records":
             _json(handler, 200, list_records(query))
@@ -290,7 +260,7 @@ def handle(handler):
             _json(handler, 200 if item else 404, item or {"error": "Record not found"})
         else:
             _json(handler, 404, {"error": "Dashboard endpoint not found"})
-    except (ValueError, CookieError):
+    except ValueError:
         _json(handler, 400, {"error": "Invalid dashboard request"})
     except LookupError:
         _json(handler, 404, {"error": "Record not found"})

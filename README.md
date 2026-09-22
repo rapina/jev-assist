@@ -60,9 +60,10 @@ runtime, and preserves changed Jev-era settings beside the restored files as
 
 Select `jev/auto` for automatic routing or a native model for a fixed selection.
 
-The Windows checkout installer configures standalone Codex in `~/.codex` and
-Orca's global Codex launch arguments. Orca account homes are not modified, so
-accounts added later inherit the same router and model catalog automatically.
+The Windows checkout installer does not reconfigure this machine's own Codex or
+Orca. Install the client (below) on every workstation, including the server
+machine, so execution stays local and only bounded task evidence reaches the
+service.
 
 ## Service and API
 

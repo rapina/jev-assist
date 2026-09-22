@@ -84,7 +84,8 @@ import time
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import dashboard
-from local_runtime import STATE, LocalServer, append_private, authorized, local_secret, protect_logs
+from local_runtime import (STATE, LocalServer, append_private, authorized, local_secret,
+                           protect_logs, repo_commit)
 
 from routing_policy import (ASTRA, EFFORTS, LUNA, POLICY_VERSION, QUESTIONS, SOL, TERRA,
                             TIERS, decision_from_answers, route)
@@ -106,6 +107,7 @@ ROUTER = ("127.0.0.1", 4202)
 
 DISPLAY_NAME = "Jev Codex Router"
 VERSION = "1.5"
+COMMIT = repo_commit()
 
 API = "https://api.typesafe.ai/v1/systemone"
 MODEL = "jev-latest"
@@ -1434,7 +1436,7 @@ class Handler(BaseHTTPRequestHandler):
             })
         elif path in ("/health", ""):
             self._json(200, {"ok": True, "service": "jev-router", "version": VERSION,
-                             "policy_version": POLICY_VERSION,
+                             "commit": COMMIT, "policy_version": POLICY_VERSION,
                              "auth_configured": bool(local_secret())})
         else:
             self._json(404, {"error": {"message": "not found"}})
@@ -1529,10 +1531,6 @@ class Handler(BaseHTTPRequestHandler):
                     self._json(200, dashboard.observe(body))
                 except ValueError:
                     self._json(400, {"error": "Invalid observation"})
-            return
-        if path == "/dashboard/session":
-            if self._body(1024) is not None:
-                dashboard._json(self, 200, dashboard.new_login())
             return
         if path.rstrip("/") in ASK_PATHS:
             return self._ask()

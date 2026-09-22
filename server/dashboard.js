@@ -1,7 +1,7 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
 const phaseNames = { received: "요청 수신", jev_request: "Jev 요청", jev_response: "Jev 응답", decided: "판단 완료", lease: "경로 재사용", jev_error: "Jev 오류", selected: "모델 선택", completed: "완료", failed: "실패", disconnected: "연결 종료" };
-let selected = null, detailVersion = null, detailSequence = 0, paused = false, busy = false, authenticated = true;
+let selected = null, detailVersion = null, detailSequence = 0, paused = false, busy = false;
 let records = [], listSignature = "", listGeneration = 0;
 
 function text(value) { return value == null ? "미기록" : typeof value === "object" ? JSON.stringify(value, null, 2) : String(value); }
@@ -60,10 +60,6 @@ function node(tag, content, className) { const el = document.createElement(tag);
 function error(message) { $("error").textContent = message; $("error").hidden = !message; }
 async function api(path, options = {}) {
   const response = await fetch(`/dashboard/api/${path}`, { credentials: "same-origin", cache: "no-store", ...options });
-  if (response.status === 401) {
-    authenticated = false; $("auth").hidden = false; $("connection").textContent = "인증 만료"; $("connection").className = "";
-    throw new Error("서비스 접속 상태를 확인하고 페이지를 새로 고치세요.");
-  }
   if (!response.ok) throw new Error(`요청 실패 (HTTP ${response.status})`);
   return response;
 }
@@ -136,7 +132,7 @@ async function refreshObservations() {
   $("observations").replaceChildren(...(items.length ? items : [node("p", "아직 수집된 세션이 없습니다. /hooks에서 관찰 훅을 활성화하세요.", "empty")]));
 }
 async function refresh() {
-  if (paused || busy || !authenticated) return;
+  if (paused || busy) return;
   busy = true; const generation = listGeneration;
   try {
     const query = new URLSearchParams({ mode: $("mode").value, model: $("model").value, limit: "100" });
@@ -147,13 +143,14 @@ async function refresh() {
     const signature = JSON.stringify(records);
     if (signature !== listSignature) { listSignature = signature; renderList(records); }
     renderDistribution(data.distribution || []);
+    $("build").textContent = `commit ${data.build?.commit || "unknown"}`;
     const stats = data.stats || {};
     for (const key of ["total", "completed", "failed"]) $(`stat-${key}`).textContent = Number(stats[key] || 0).toLocaleString("ko-KR");
     error(data.storage_error ? `기록 저장 오류: ${text(data.storage_error)}` : "");
     $("connection").textContent = "실시간 연결"; $("connection").className = "live";
     if (!selected && records.length) await selectRecord(records[0].id);
     else if (selected) { const summary = records.find((record) => record.id === selected); if (detailVersion == null || (summary && summary.updated !== detailVersion)) await fetchDetail(selected); }
-  } catch (exception) { error(exception.message); if (authenticated) { $("connection").textContent = "연결 재시도 중"; $("connection").className = ""; } }
+  } catch (exception) { error(exception.message); $("connection").textContent = "연결 재시도 중"; $("connection").className = ""; }
   finally { busy = false; }
 }
 $("pause").addEventListener("click", () => { paused = !paused; $("pause").textContent = paused ? "실시간 재개" : "일시 정지"; $("pause").setAttribute("aria-pressed", String(paused)); $("connection").textContent = paused ? "갱신 일시 정지" : "연결 중"; $("connection").className = ""; if (!paused) refresh(); });

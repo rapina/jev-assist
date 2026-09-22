@@ -68,6 +68,60 @@ def append_private(path, text, max_bytes=MAX_LOG_BYTES):
                 os.close(fd)
 
 
+def repo_commit(start=None):
+    """Short hash of the checkout this server runs from, read from .git files.
+
+    Answers "which Jev Assist is running" on the dashboard and /health without
+    spawning git. Returns "unknown" outside a git checkout.
+    """
+    root = os.path.dirname(os.path.abspath(start or __file__))
+    while True:
+        git = os.path.join(root, ".git")
+        if os.path.isdir(git):
+            break
+        if os.path.isfile(git):  # worktree: "gitdir: <path>"
+            try:
+                with open(git, encoding="utf-8") as handle:
+                    git = handle.read().strip().partition("gitdir:")[2].strip()
+                if git and not os.path.isabs(git):
+                    git = os.path.join(root, git)
+                if os.path.isdir(git):
+                    break
+            except OSError:
+                pass
+        parent = os.path.dirname(root)
+        if parent == root:
+            return "unknown"
+        root = parent
+    try:
+        with open(os.path.join(git, "HEAD"), encoding="utf-8") as handle:
+            head = handle.read().strip()
+        if not head.startswith("ref:"):
+            return head[:7] or "unknown"
+        ref = head.partition(":")[2].strip()
+        bases = [git]
+        common = os.path.join(git, "commondir")
+        if os.path.isfile(common):  # linked worktree: branch refs live in the main repo
+            with open(common, encoding="utf-8") as handle:
+                bases.append(os.path.normpath(os.path.join(git, handle.read().strip())))
+        for base in bases:
+            loose = os.path.join(base, *ref.split("/"))
+            if os.path.isfile(loose):
+                with open(loose, encoding="utf-8") as handle:
+                    return handle.read().strip()[:7] or "unknown"
+        for base in bases:
+            packed = os.path.join(base, "packed-refs")
+            if os.path.isfile(packed):
+                with open(packed, encoding="utf-8") as handle:
+                    for line in handle:
+                        parts = line.split()
+                        if len(parts) == 2 and parts[1] == ref:
+                            return parts[0][:7]
+        return "unknown"
+    except (OSError, UnicodeError):
+        return "unknown"
+
+
 def protect_logs(paths):
     """Secure existing captures without reading or exposing their contents."""
     for path in paths:
@@ -85,14 +139,32 @@ def protect_logs(paths):
 class LocalServer(ThreadingHTTPServer):
     """Bound concurrent connections, including clients waiting to send a body."""
     daemon_threads = True
+    # How long a finished response may wait for the client to close first.
+    close_grace = 5.0
 
     def __init__(self, *args, max_connections=32, **kwargs):
         self._slots = threading.BoundedSemaphore(max_connections)
         super().__init__(*args, **kwargs)
 
+    def shutdown_request(self, request):
+        # socketserver half-closes with shutdown(SHUT_WR) before close(). On
+        # Windows hosts with a loopback filter driver that discards whatever is
+        # still queued when the send side is shut down, any response larger
+        # than the socket send buffer (~64 KiB: assembled compaction results,
+        # the client bundle) reaches the peer truncated and the peer then
+        # waits forever for the rest. Let the client finish reading and close
+        # first; a peer that never closes is dropped after the grace period.
+        try:
+            request.settimeout(self.close_grace)
+            while request.recv(4096):
+                pass
+        except OSError:
+            pass
+        self.close_request(request)
+
     def process_request(self, request, client_address):
         if not self._slots.acquire(blocking=False):
-            self.shutdown_request(request)
+            self.close_request(request)
             return
         try:
             super().process_request(request, client_address)

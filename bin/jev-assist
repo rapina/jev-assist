@@ -21,7 +21,7 @@ Commands:
   router ARGS...            Run the embedded codex-router CLI
   smoke                     Run the Jev end-to-end smoke test
   report [ARGS...]          Report observed routing and cache usage
-  dashboard                 Open the authenticated local decision dashboard
+  dashboard                 Open the local decision dashboard
   help                      Show this help
 EOF
 }

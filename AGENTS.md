@@ -102,9 +102,12 @@ homes. The Windows runtime needs `server/requirements-windows.txt` in
 controls only Jev; `router` delegates to the embedded runtime. Do not replace
 a task belonging to another checkout or Codex home.
 
-The Windows checkout installer configures standalone `~/.codex` and Orca's
-global Codex launch arguments. It must not copy router settings into individual
-`orca/codex-accounts` homes; newly added accounts inherit the global arguments.
+The Windows checkout installer never points this machine's own Codex or Orca at
+the router. Routing full conversations (including compactions) through
+router -> litellm -> forwarder -> jev_server turned the central service into an
+execution proxy. Every workstation, the server machine included, installs the
+dashboard client (`server\install-client.ps1 -ServiceUrl <gateway origin>`),
+which sends only bounded task evidence to `/v1/route` and executes locally.
 
 Team distribution must use this fork's published URL, not upstream's
 unmodified Windows files.

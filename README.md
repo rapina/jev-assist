@@ -81,3 +81,20 @@ Derived from [0xNatoshi/jev-codex-router](https://github.com/0xNatoshi/jev-codex
 The embedded Codex Router fork is documented in [ROUTER_FORK.md](ROUTER_FORK.md).
 Third-party licenses and provenance are retained under `router/` and `vendor/`.
 MIT license; see [LICENSE](LICENSE).
+
+## When the service is unavailable
+
+Automatic routing waits up to four seconds for a decision, then executes locally
+with Sol and the current valid reasoning effort (medium by default). The next
+request tries Jev again. A fixed model selection executes immediately; central
+telemetry never blocks it. Requests made while central reporting is unavailable
+may be absent from the dashboard. OpenAI errors are still returned normally.
+
+If the local transport is also stopped, launch ordinary Codex directly:
+
+```powershell
+codex -c model_provider=openai -m gpt-5.6-sol
+```
+
+This bypasses Jev for that process and uses the local ChatGPT account. To return
+to automatic routing, restore the local transport and start Codex normally.

@@ -37,12 +37,13 @@ export function createLocalClient({origin, upstream = 'https://chatgpt.com/backe
   if (!['http:', 'https:'].includes(central.protocol) || central.origin !== origin || central.username || central.password) throw new Error('Invalid service origin');
   const post = async (route, body) => {
     const response = await fetcher(origin + route, {method:'POST', headers:{'content-type':'application/json'},
-      body:JSON.stringify(body), redirect:'error', signal:AbortSignal.timeout(15000)});
+      body:JSON.stringify(body), redirect:'error', signal:AbortSignal.timeout(4000)});
     if (!response.ok) throw new Error('Central decision service unavailable');
     return response.json();
   };
   const server = http.createServer(async (req, res) => {
-    let route, started = Date.now(), terminal, usage;
+    let route, registration, started = Date.now(), terminal, usage;
+    let report = async () => {};
     const abort = new AbortController();
     res.on('close', () => { if (!res.writableFinished) abort.abort(); });
     try {
@@ -60,8 +61,24 @@ export function createLocalClient({origin, upstream = 'https://chatgpt.com/backe
       const automatic = payload.model === 'jev/auto';
       if (!automatic && !MODELS.includes(payload.model)) return reply(res,400,'Only configured OpenAI models are supported');
       if (!automatic && !EFFORTS.includes(payload.reasoning?.effort || 'medium')) return reply(res,400,'Invalid effort');
-      route = await post('/v1/route', automatic ? {state:dossier(payload)} : {model:payload.model,effort:payload.reasoning?.effort || 'medium'});
-      if (!MODELS.includes(route.model) || !EFFORTS.includes(route.effort) || typeof route.id !== 'string') throw new Error('Invalid route');
+      const requestedEffort = EFFORTS.includes(payload.reasoning?.effort) ? payload.reasoning.effort : 'medium';
+      if (automatic) {
+        try {
+          route = await post('/v1/route', {state:dossier(payload)});
+          if (!MODELS.includes(route.model) || !EFFORTS.includes(route.effort) || typeof route.id !== 'string') throw new Error('Invalid route');
+        } catch {
+          route = {model:'gpt-5.6-sol',effort:requestedEffort,source:'local_fallback'};
+        }
+      } else {
+        route = {model:payload.model,effort:requestedEffort,source:'client_model'};
+        // Recording a fixed selection must never gate local execution.
+        registration = post('/v1/route', {model:route.model,effort:route.effort}).catch(()=>null);
+      }
+      report = async status => {
+        const registered = registration ? await registration : route;
+        if (registered?.id && registered.model === route.model && registered.effort === route.effort)
+          await post('/v1/outcome',{id:registered.id,model:route.model,status,total_ms:Date.now()-started,usage}).catch(()=>{});
+      };
       payload.model=route.model;
       payload.reasoning={...payload.reasoning,effort:route.effort};
       payload.service_tier='default'; payload.store=false;
@@ -71,7 +88,7 @@ export function createLocalClient({origin, upstream = 'https://chatgpt.com/backe
         if (typeof req.headers[key] === 'string') headers[key]=req.headers[key];
       }
       const response = await fetcher(upstream,{method:'POST',headers,body:JSON.stringify(payload),redirect:'error',signal:abort.signal});
-      const outgoing={'content-type':response.headers.get('content-type') || 'application/json'};
+      const outgoing={'content-type':response.headers.get('content-type') || 'application/json', 'x-jev-routing':route.source || 'central'};
       for (const key of ['retry-after','x-request-id','x-codex-turn-state']) if(response.headers.has(key)) outgoing[key]=response.headers.get(key);
       res.writeHead(response.status,outgoing);
       let pending=''; const decoder=new TextDecoder();
@@ -93,10 +110,10 @@ export function createLocalClient({origin, upstream = 'https://chatgpt.com/backe
       }
       res.end();
       const status = response.status === 200 && terminal !== 'response.completed' ? 502 : response.status;
-      await post('/v1/outcome',{id:route.id,model:route.model,status,total_ms:Date.now()-started,usage}).catch(()=>{});
+      await report(status);
     } catch {
       reply(res,502,'Jev local connection failed; no alternate account or provider was used');
-      if(route?.id) await post('/v1/outcome',{id:route.id,model:route.model,status:terminal === 'response.completed' ? 200 : 502,total_ms:Date.now()-started,usage}).catch(()=>{});
+      await report(terminal === 'response.completed' ? 200 : 502);
     }
   });
   server.requestTimeout=900000;

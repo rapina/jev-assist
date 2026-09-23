@@ -116,7 +116,7 @@ class LocalControls(unittest.TestCase):
                 self.assertEqual(local_runtime.local_secret(), "")
             with self.assertRaises(OSError):
                 local_runtime.append_private(str(link), "must not write")
-            self.assertEqual(target.read_text(), "unchanged")
+            self.assertEqual(target.read_text(encoding="utf-8"), "unchanged")
 
     def test_healthcheck_requires_correct_service_and_json(self):
         for payload, status, expected in [

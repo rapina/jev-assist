@@ -30,7 +30,7 @@ class StatePaths(unittest.TestCase):
             self.assertEqual(paths[3], str(Path(tmp) / "codex-router/jev-router-live.jsonl"))
 
     def test_windows_client_bootstraps_node_without_docker(self):
-        installer = (ROOT / 'server/install-client.ps1').read_text()
+        installer = (ROOT / 'server/install-client.ps1').read_text(encoding="utf-8")
         self.assertIn('winget', installer.lower())
         self.assertIn('OpenJS.NodeJS.LTS', installer)
         self.assertIn('Docker is not required', installer)
@@ -40,7 +40,7 @@ class StatePaths(unittest.TestCase):
         # service an execution proxy for whole conversations (compactions
         # included). Execution belongs to the dashboard client on every
         # workstation, the server machine included.
-        installer = (ROOT / 'install.ps1').read_text()
+        installer = (ROOT / 'install.ps1').read_text(encoding="utf-8")
         self.assertNotIn("config-manager.mjs\", 'enable'", installer)
         self.assertNotIn('configure-orca', installer)
         self.assertNotIn('openai_base_url', installer)
@@ -80,14 +80,14 @@ class WindowsInstall(unittest.TestCase):
                            str(ROOT / 'server/install-client.ps1'), '-ServiceUrl', origin, '-CodexHome', str(home)]
                 for _ in range(2):
                     subprocess.run(command, check=True, capture_output=True)
-                config = (home / 'config.toml').read_text()
+                config = (home / 'config.toml').read_text(encoding="utf-8")
                 self.assertIn('model_provider = "jev-local"', config)
                 self.assertIn('base_url = "http://127.0.0.1:4321/v1"', config)
                 self.assertIn('requires_openai_auth = true', config)
                 self.assertIn(original, config)
-                self.assertEqual((home / 'config.toml.before-jev-local').read_text(), original)
+                self.assertEqual((home / 'config.toml.before-jev-local').read_text(encoding="utf-8"), original)
                 self.assertFalse((home / 'auth.json').exists())
-                hooks = json.loads((home / 'hooks.json').read_text())['hooks']
+                hooks = json.loads((home / 'hooks.json').read_text(encoding="utf-8"))['hooks']
                 self.assertEqual(len(hooks['Stop']), 1)
                 script = str(ROOT / 'server/uninstall-client.ps1').replace("'", "''")
                 target = str(home).replace("'", "''")
@@ -96,8 +96,8 @@ class WindowsInstall(unittest.TestCase):
                 for _ in range(2):
                     result = subprocess.run(uninstall, capture_output=True, text=True)
                     self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertEqual((home / 'config.toml').read_text(), original)
-                self.assertEqual(json.loads((home / 'hooks.json').read_text()), {})
+                self.assertEqual((home / 'config.toml').read_text(encoding="utf-8"), original)
+                self.assertEqual(json.loads((home / 'hooks.json').read_text(encoding="utf-8")), {})
                 self.assertFalse((home / 'jev-assist-client').exists())
             finally:
                 service.shutdown()

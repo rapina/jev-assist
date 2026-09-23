@@ -46,7 +46,7 @@ class ReplayPolicy(unittest.TestCase):
                  mock.patch("sys.argv", ["backtest"]), contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(backtest.main(), 0)
             self.assertEqual(judge.call_args.args[2]["questions"], routing_policy.QUESTIONS)
-            data = json.loads(result.read_text())
+            data = json.loads(result.read_text(encoding="utf-8"))
             self.assertEqual(data["turns"], 1)
             self.assertEqual(data["skipped_turns"], 1)
             self.assertEqual(data["jev_usd"], 0.2)
@@ -64,7 +64,7 @@ class ReplayPolicy(unittest.TestCase):
             self.write_session(root, "second", routing_policy.LUNA, 1_000_000)
             folder = root / "2026/09/20"
             first, second = folder / "first.jsonl", folder / "second.jsonl"
-            first.write_text(first.read_text() + "\n" + second.read_text())
+            first.write_text(first.read_text(encoding="utf-8") + "\n" + second.read_text(encoding="utf-8"))
             second.unlink()
             result = root / "result.json"
             with mock.patch.object(backtest, "SESS_ROOT", str(root)), \
@@ -73,7 +73,7 @@ class ReplayPolicy(unittest.TestCase):
                  mock.patch.object(backtest.poc, "post_json", return_value={"answers": {key: {"choice": value} for key, value in routing_policy.route_choice(routing_policy.LUNA, "low").items()}}), \
                  mock.patch("sys.argv", ["backtest"]), contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(backtest.main(), 0)
-            data = json.loads(result.read_text())
+            data = json.loads(result.read_text(encoding="utf-8"))
             self.assertEqual(data["actual_models"],
                              {routing_policy.SOL: 1, routing_policy.LUNA: 1})
             self.assertEqual(data["actual_usd"], 4.2)

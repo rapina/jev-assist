@@ -49,9 +49,15 @@ function Restart-Jev {
   }
   if ($LASTEXITCODE) { throw 'Python dependency install failed' }
 
-  & $PowerShell -NoProfile -ExecutionPolicy Bypass -File "$Repo\server\service-windows.ps1" install `
-    -CodexDirectory (Split-Path $Config.stateDir) -StateDirectory $Config.stateDir
-  if ($LASTEXITCODE) { throw 'Jev service restart failed' }
+  # 'Stop' would turn the child's own stderr into a throw of its own and lose
+  # the message, which is what made a restart failure unreadable from the log.
+  $Previous = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  $Output = & $PowerShell -NoProfile -ExecutionPolicy Bypass -File "$Repo\server\service-windows.ps1" install `
+    -CodexDirectory (Split-Path $Config.stateDir) -StateDirectory $Config.stateDir 2>&1
+  $Failed = $LASTEXITCODE
+  $ErrorActionPreference = $Previous
+  if ($Failed) { throw "Jev service restart failed: $(($Output | Out-String).Trim())" }
 
   $Gateway = Get-ScheduledTask -TaskName "JevHttpGateway-$Sid" -ErrorAction Stop
   $Gateway | Stop-ScheduledTask

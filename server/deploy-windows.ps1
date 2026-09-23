@@ -7,6 +7,19 @@ $Name = "JevAssistDeploy-$Sid"
 $PowerShell = Join-Path $PSHOME 'powershell.exe'
 $Arguments = '-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $PSCommandPath + '" run'
 $Existing = Get-ScheduledTask -TaskName $Name -ErrorAction SilentlyContinue
+$StateDir = Join-Path $env:USERPROFILE '.codex\codex-router'
+$Log = Join-Path $StateDir 'buildbox-deploy.log'
+
+function Write-Log([string]$Message) {
+  Add-Content -LiteralPath $Log -Encoding UTF8 -Value ('[{0}] {1}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message)
+}
+
+function Test-JevHealthy {
+  try {
+    $Health = Invoke-RestMethod 'http://127.0.0.1:4319/health' -TimeoutSec 3
+    return [bool]($Health.ok -and $Health.service -eq 'jev-router')
+  } catch { return $false }
+}
 
 function Invoke-Git([string[]]$Arguments) {
   $Output = & git -C $Repo @Arguments
@@ -56,24 +69,29 @@ function Deploy {
   $Before = Invoke-Git @('rev-parse', 'HEAD')
   Invoke-Git @('fetch', '--quiet', '--no-tags', 'origin', 'main') | Out-Null
   $Target = Invoke-Git @('rev-parse', 'origin/main')
-  if ($Target -eq $Before) { return }
+  $Moved = $false
 
-  & git -C $Repo merge-base --is-ancestor $Before $Target
-  if ($LASTEXITCODE) { throw 'origin/main is not a fast-forward' }
-  $Remote = Invoke-Git @('remote', 'get-url', 'origin')
-  if ($Remote -notmatch '^https://github\.com/([^/]+)/([^/]+)\.git$') { throw 'Expected a public GitHub HTTPS origin' }
-  $Runs = Invoke-RestMethod "https://api.github.com/repos/$($Matches[1])/$($Matches[2])/actions/workflows/ci.yml/runs?head_sha=$Target&event=push&per_page=10" `
-    -Headers @{'Accept'='application/vnd.github+json'; 'User-Agent'='jev-assist-buildbox'} -TimeoutSec 15
-  if (-not ($Runs.workflow_runs | Where-Object { $_.head_sha -eq $Target -and $_.status -eq 'completed' -and $_.conclusion -eq 'success' })) { return }
-
-  try {
-    Invoke-Git @('merge', '--ff-only', $Target) | Out-Null
-    Restart-Jev
-  } catch {
-    & git -C $Repo reset --hard $Before | Out-Null
-    Restart-Jev
-    throw
+  if ($Target -ne $Before) {
+    & git -C $Repo merge-base --is-ancestor $Before $Target
+    if ($LASTEXITCODE) { throw 'origin/main is not a fast-forward' }
+    $Remote = Invoke-Git @('remote', 'get-url', 'origin')
+    if ($Remote -notmatch '^https://github\.com/([^/]+)/([^/]+)\.git$') { throw 'Expected a public GitHub HTTPS origin' }
+    $Runs = Invoke-RestMethod "https://api.github.com/repos/$($Matches[1])/$($Matches[2])/actions/workflows/ci.yml/runs?head_sha=$Target&event=push&per_page=10" `
+      -Headers @{'Accept'='application/vnd.github+json'; 'User-Agent'='jev-assist-buildbox'} -TimeoutSec 15
+    if ($Runs.workflow_runs | Where-Object { $_.head_sha -eq $Target -and $_.status -eq 'completed' -and $_.conclusion -eq 'success' }) {
+      Write-Log "update $($Before.Substring(0, 7)) -> $($Target.Substring(0, 7))"
+      Invoke-Git @('merge', '--ff-only', $Target) | Out-Null
+      $Moved = $true
+    }
   }
+
+  # No rollback on a failed restart: reverting the checkout and restarting a
+  # second time took the service down twice per run without ever fixing the
+  # cause. Advance once, and let the health probe retry the restart on the
+  # next run until it succeeds.
+  if (-not $Moved -and (Test-JevHealthy)) { return }
+  Restart-Jev
+  Write-Log "restarted at $(Invoke-Git @('rev-parse', '--short', 'HEAD'))"
 }
 
 switch ($Action) {
@@ -100,5 +118,12 @@ switch ($Action) {
     Start-ScheduledTask -TaskName $Name
     Write-Output "Buildbox auto-deploy installed: $Name"
   }
-  'run' { Deploy }
+  'run' {
+    $Lock = Join-Path $StateDir 'buildbox-deploy.lock'
+    if ((Test-Path -LiteralPath $Lock) -and ((Get-Date) - (Get-Item -LiteralPath $Lock).LastWriteTime).TotalMinutes -lt 30) { return }
+    New-Item -ItemType File -Path $Lock -Force | Out-Null
+    try { Deploy }
+    catch { Write-Log "ERROR: $($_.Exception.Message)"; throw }
+    finally { Remove-Item -LiteralPath $Lock -Force -ErrorAction SilentlyContinue }
+  }
 }

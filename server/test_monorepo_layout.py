@@ -40,10 +40,27 @@ class EmbeddedRouterLayout(unittest.TestCase):
         self.assertNotIn("install.ps1\" -SkipSmoke", deploy)
         self.assertNotIn("router\\src\\service.mjs", deploy)
 
+    def test_windows_deploy_never_rolls_back_and_retries_an_unhealthy_service(self):
+        deploy = (ROOT / "server" / "deploy-windows.ps1").read_text()
+        # Rolling the checkout back and restarting a second time took the
+        # service down twice per run without ever fixing the cause.
+        self.assertNotIn("reset", deploy)
+        self.assertIn("if (-not $Moved -and (Test-JevHealthy)) { return }", deploy)
+        self.assertIn("buildbox-deploy.lock", deploy)
+        self.assertIn("buildbox-deploy.log", deploy)
+
     def test_windows_service_matches_the_venv_redirector_relative_script(self):
         service = (ROOT / "server" / "service-windows.ps1").read_text()
         self.assertIn("|server[\\\\/]jev_server\\.py", service)
-        self.assertIn("$Parent.ProcessId -ne $Owned.pid", service)
+        self.assertIn("$Parent.ExecutablePath -ne $Python", service)
+        self.assertIn("GetOwnerSid", service)
+        # A stale recorded pid used to block the kill and wedge port 4319.
+        self.assertNotIn("$Owned.pid", service)
+        self.assertNotIn("jev-service-process.json", service)
+        self.assertNotIn(
+            "jev-service-process.json",
+            (ROOT / "server" / "run-service.ps1").read_text(),
+        )
 
     def test_model_configuration_is_idempotent_and_preserves_other_routes(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -19,21 +19,17 @@ function Stop-JevTask {
   if (-not $Existing) { return }
   Stop-ScheduledTask -TaskName $Name
   # Windows venv redirectors can survive termination of the task's PowerShell.
-  # Stop only our exact script, owned by this user, with our venv parent.
+  # Our venv's python as parent, our server script, our SID: no other checkout
+  # or user can match all three. A recorded pid was required here too, but it
+  # goes stale on any unclean stop, and then nothing frees 4319 and 'install'
+  # below throws on every run while the service stays down.
   $ServerScript = Join-Path $PSScriptRoot 'jev_server.py'
   $Tail = '\s+-X\s+utf8\s+"?(?:' + [regex]::Escape($ServerScript) + '|server[\\/]jev_server\.py)"?\s*$'
-  $Marker = Join-Path $StateDirectory 'jev-service-process.json'
-  if (-not (Test-Path -LiteralPath $Marker)) { return }
-  $Owned = Get-Content -LiteralPath $Marker -Raw | ConvertFrom-Json
-  if ($Owned.codex_home -ne $CodexDirectory -or $Owned.state -ne $StateDirectory) { return }
   foreach ($Connection in @(Get-NetTCPConnection -LocalPort 4319 -State Listen -ErrorAction SilentlyContinue)) {
     $Process = Get-CimInstance Win32_Process -Filter "ProcessId = $($Connection.OwningProcess)"
     if (-not $Process -or $Process.CommandLine -notmatch $Tail) { continue }
     $Parent = Get-CimInstance Win32_Process -Filter "ProcessId = $($Process.ParentProcessId)"
     if (-not $Parent -or $Parent.ExecutablePath -ne $Python -or $Parent.CommandLine -notmatch $Tail) { continue }
-    $ParentInfo = Get-Process -Id $Parent.ProcessId -ErrorAction SilentlyContinue
-    if (-not $ParentInfo -or $Parent.ProcessId -ne $Owned.pid -or
-        $ParentInfo.StartTime.ToUniversalTime().Ticks -ne $Owned.started) { continue }
     if ((Invoke-CimMethod -InputObject $Process -MethodName GetOwnerSid).Sid -ne $Sid -or
         (Invoke-CimMethod -InputObject $Parent -MethodName GetOwnerSid).Sid -ne $Sid) { continue }
     Stop-Process -Id $Process.ProcessId -Force -ErrorAction SilentlyContinue

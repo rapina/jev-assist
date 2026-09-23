@@ -60,11 +60,17 @@ switch ($Action) {
       Start-Sleep -Milliseconds 250
     } while ($Existing -and (Get-Date) -lt $Deadline)
     if (-not $Available) { throw 'Port 4319 is still in use; refusing to replace its listener.' }
-    $TaskAction = New-ScheduledTaskAction -Execute $PowerShell -Argument $Arguments -WorkingDirectory $Repo
-    $Trigger = New-ScheduledTaskTrigger -AtLogOn -User $Sid
-    $Principal = New-ScheduledTaskPrincipal -UserId $Sid -LogonType Interactive -RunLevel Limited
-    $Settings = New-ScheduledTaskSettingsSet -Hidden -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
-    Register-ScheduledTask -TaskName $Name -Action $TaskAction -Trigger $Trigger -Principal $Principal -Settings $Settings -Force | Out-Null
+    # $Existing already matched our action above, so re-registering would write
+    # the task with itself. Overwriting a task the first install registered
+    # elevated needs that elevation again, and the non-elevated auto-deploy
+    # task only gets 0x80070005 for it. Starting one we already own is enough.
+    if (-not $Existing) {
+      $TaskAction = New-ScheduledTaskAction -Execute $PowerShell -Argument $Arguments -WorkingDirectory $Repo
+      $Trigger = New-ScheduledTaskTrigger -AtLogOn -User $Sid
+      $Principal = New-ScheduledTaskPrincipal -UserId $Sid -LogonType Interactive -RunLevel Limited
+      $Settings = New-ScheduledTaskSettingsSet -Hidden -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
+      Register-ScheduledTask -TaskName $Name -Action $TaskAction -Trigger $Trigger -Principal $Principal -Settings $Settings -Force | Out-Null
+    }
     Start-ScheduledTask -TaskName $Name
     $Deadline = (Get-Date).AddSeconds(30)
     do {

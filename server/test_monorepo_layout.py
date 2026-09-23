@@ -61,6 +61,8 @@ class EmbeddedRouterLayout(unittest.TestCase):
             "jev-service-process.json",
             (ROOT / "server" / "run-service.ps1").read_text(encoding="utf-8"),
         )
+        # Re-registering an elevated task fails for the non-elevated deploy.
+        self.assertIn("if (-not $Existing) {", service)
 
     def test_model_configuration_is_idempotent_and_preserves_other_routes(self):
         with tempfile.TemporaryDirectory() as temp:
